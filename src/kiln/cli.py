@@ -8,6 +8,9 @@ from kiln import check, dev, install, new, settings, update
 from kiln.shell import KilnError, repo_root
 
 EXIT_FAILURE = 1
+PROJECT_TYPES = ("app", "api", "site", "tableau", "analyse")
+BACKENDS = ("django", "fastapi", "data", "aucun")
+FRONTENDS = ("nuxt", "next", "astro", "streamlit", "dash", "aucun")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -32,6 +35,10 @@ def _add_new_command(commands: argparse._SubParsersAction[argparse.ArgumentParse
     new_parser.add_argument("--description", help="une phrase sur le projet")
     new_parser.add_argument("--owner", help="compte GitHub propriétaire")
     new_parser.add_argument("--team", help="logins GitHub séparés par des virgules")
+    new_parser.add_argument("--type", dest="project_type", choices=PROJECT_TYPES, help="conseil")
+    new_parser.add_argument("--backend", choices=BACKENDS, help="backend (sinon conseillé)")
+    new_parser.add_argument("--frontend", choices=FRONTENDS, help="frontend (sinon conseillé)")
+    new_parser.add_argument("--podman", action="store_true", help="conteneurs podman")
     new_parser.add_argument("--todo", metavar="GOAL", help="suivi docs/a-faire/ et sa boussole")
     new_parser.add_argument("--github", action="store_true", help="créer et protéger le dépôt")
     new_parser.add_argument("--no-install", action="store_true", help="ne rien installer")
@@ -51,6 +58,15 @@ def _new_project_request(arguments: argparse.Namespace) -> new.NewProjectRequest
         answers["titre"] = arguments.title
     if arguments.description:
         answers["description"] = arguments.description
+    for key, value in (
+        ("type_projet", arguments.project_type),
+        ("backend", arguments.backend),
+        ("frontend", arguments.frontend),
+    ):
+        if value:
+            answers[key] = value
+    if arguments.podman:
+        answers["podman"] = True
     if arguments.todo:
         answers.update({"avec_a_faire": True, "boussole": arguments.todo})
     if arguments.owner:
