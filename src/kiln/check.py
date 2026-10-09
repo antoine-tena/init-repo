@@ -1,26 +1,20 @@
-"""`kiln check` : rejoue les contrôles du backend et du frontend, sans s'arrêter."""
+"""`kiln check` : rejoue les contrôles de la stack et la charte, sans s'arrêter au premier."""
 
 import subprocess
 from pathlib import Path
 
 from kiln.shell import KilnError, step
-
-CHECKS: tuple[tuple[str, str, list[str]], ...] = (
-    ("backend", "ruff", ["uv", "run", "ruff", "check", "."]),
-    ("backend", "mypy", ["uv", "run", "mypy", "."]),
-    ("backend", "pytest", ["uv", "run", "pytest", "-q"]),
-    ("frontend", "types", ["pnpm", "typecheck"]),
-)
+from kiln.stack import load_stack
 
 
 def check_project(root: Path) -> None:
     """Lance chaque contrôle, puis échoue en listant ceux qui ont échoué."""
     failed_checks: list[str] = []
-    for folder, label, command in CHECKS:
-        step(f"Vérification {folder} : {label}")
-        completed = subprocess.run(command, cwd=root / folder, check=False)
+    for command in load_stack(root).check_commands():
+        step(f"Vérification : {command.label}")
+        completed = subprocess.run(list(command.argv), cwd=root / command.directory, check=False)
         if completed.returncode != 0:
-            failed_checks.append(f"{folder} {label}")
+            failed_checks.append(command.label)
     if failed_checks:
         raise KilnError(f"contrôles en échec : {', '.join(failed_checks)}")
     print("\nTous les contrôles passent.")
