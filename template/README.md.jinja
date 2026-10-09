@@ -1,0 +1,75 @@
+# {{ titre }}
+
+{{ description }}
+
+## Équipe
+
+{% for login in equipe -%}
+- [@{{ login }}](https://github.com/{{ login }})
+{% endfor %}
+## Organisation
+
+- `backend/` : l'API, en Django + Django Ninja ; règles dans
+  [`backend/CLAUDE.md`](backend/CLAUDE.md).
+- `frontend/` : l'interface, en Nuxt 4 + Vue 3 ; règles dans
+  [`frontend/CLAUDE.md`](frontend/CLAUDE.md).
+- [`CLAUDE.md`](CLAUDE.md) : la charte commune (nommage, taille, git…), pour les humains comme
+  pour les agents.
+- `.vscode/` : réglages et extensions recommandées, partagés par toute l'équipe.
+
+Le projet est généré et tenu à jour par
+[init-repo](https://github.com/antoine-tena/init-repo) (réponses dans `.copier-answers.yml`).
+
+## Installation
+
+Prérequis : [uv](https://docs.astral.sh/uv/), [pnpm](https://pnpm.io/) (avec Node 24) et
+l'outil init-repo, installé une fois par poste :
+
+```sh
+uv tool install git+https://github.com/antoine-tena/init-repo
+```
+
+Puis, après le clone, depuis la racine du dépôt :
+
+```sh
+init-repo installer
+```
+
+La commande installe les dépendances du backend et du frontend, crée `backend/.env` avec une
+clé secrète locale, applique les migrations et active les garde-fous du commit (pre-commit,
+dont le refus de commiter sur `main` ou `develop`). On peut la relancer sans risque.
+
+## Lancer le projet
+
+```sh
+init-repo dev
+```
+
+- Frontend : http://localhost:3000 (les appels `/api` sont relayés vers le backend).
+- Backend : http://localhost:8000/api/ (documentation de l'API sur `/api/docs`).
+
+## Mettre à jour
+
+Sur une branche dédiée (`chore/maj-…`), avec un arbre propre :
+
+```sh
+init-repo maj
+```
+
+Elle rapporte les évolutions du modèle (charte, outillage, configuration) sans écraser les
+modifications locales, puis met à jour les dépendances. Relire le diff, lancer les
+vérifications, puis ouvrir une pull request.
+
+## Vérifier le code
+
+```sh
+cd backend && uv run ruff check . && uv run mypy . && uv run pytest
+cd frontend && pnpm typecheck
+```
+
+## Contribuer
+
+1. Créer une branche depuis `main` (`feat/…`, `fix/…`, voir [BRANCHES]).
+2. Respecter les règles du [`CLAUDE.md`](CLAUDE.md).
+3. Ouvrir une pull request : elle doit être approuvée par un autre membre de l'équipe avant la
+   fusion. Personne ne peut pousser directement sur `main` ou `develop`.

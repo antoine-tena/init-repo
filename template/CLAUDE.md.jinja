@@ -1,0 +1,251 @@
+# {{ titre }} — consignes et charte de développement
+
+{{ description }}
+
+Monorepo : backend Django + Django Ninja (`backend/`) et frontend Nuxt 4 + Vue 3
+(`frontend/`). Ce fichier réunit les consignes de travail sur le dépôt et la **charte**, norme
+unique du code, reprise de celle d'AnnSki : tout code nouveau la respecte, humains et agents.
+La charte tient en trois fichiers : celui-ci (§0, §1, §4, §5),
+[`frontend/CLAUDE.md`](frontend/CLAUDE.md) (§2) et [`backend/CLAUDE.md`](backend/CLAUDE.md)
+(§3), chargés par Claude Code dès qu'il travaille dans le dossier.
+
+## Langue
+
+- Échanges, documentation et messages de commit en français ; code en anglais.
+
+---
+
+## 0. Mode d'emploi de la charte
+
+### Identifiants stables
+Chaque règle porte un identifiant entre crochets, par exemple **`[VERROUS]`**. Le code, les
+tests, `charte.toml` et les PR citent une règle par cet identifiant — `CLAUDE.md [VERROUS]` —,
+**jamais par un numéro de ligne**. Un identifiant ne change jamais et n'est jamais réutilisé ;
+une règle abolie garde le sien, marquée *abrogée*. `CLAUDE.md` désigne la charte entière :
+l'identifiant se trouve dans l'un de ses trois fichiers.
+
+### Trois régimes d'application
+- **Stricte** : zéro infraction tolérée, le contrôle fait échouer la CI.
+- **Cliquet** : un passif existe ; son budget est plafonné et **ne peut que baisser**. Réduire
+  la dette et abaisser le budget dans le même commit.
+- **Revue** : non vérifiable mécaniquement ; appliqué en relecture.
+
+Tant qu'aucun contrôle n'est branché (commande `charte` et `charte.toml`, pre-commit, CI),
+toutes les règles sont en régime **revue**, et le code part de zéro : une règle stricte ou en
+cliquet chez AnnSki n'a ici aucun passif à tolérer. Une règle impossible à tenir
+s'**amende ici**, explicitement, avec sa raison et sa date — on ne la contourne pas en
+silence. Une exception ponctuelle se justifie par un commentaire au point d'appel, qui cite
+l'identifiant de la règle.
+
+### Hiérarchie
+En cas de conflit : **sécurité et intégrité des données > contrat d'API publié > lisibilité >
+règles de forme**. Exemple : renommer un booléen déjà exposé pour le préfixer en `is_`
+casserait le contrat ([CONTRAT-FIGE]) ; on ne le fait qu'en ouvrant une nouvelle version.
+
+---
+
+## 1. Règles communes aux deux codebases
+
+### Taille et découpage
+- **[TAILLE-FICHIER]** 300 lignes au plus par fichier (cliquet).
+  - Frontend : un composant Vue qui dépasse devient un dossier (un point d'entrée et des
+    sous-composants).
+  - Backend : un module qui dépasse devient un paquet ; `__init__.py` réexporte l'API publique.
+  - Exemptés : migrations générées, `settings.py`, fichiers générés — ceux que
+    `.gitattributes` marque `linguist-generated`, seule liste (`openapi.json`, types
+    TypeScript générés, verrous).
+- **[TAILLE-FONCTION]** Une fonction = une responsabilité, **30 lignes au plus** (hors
+  template des fichiers Vue, hors docstring). Un test peut aller jusqu'à 40 lignes si le
+  découper cacherait le scénario.
+- **[UNE-CLASSE]** Une classe par fichier. Exceptions, qui restent sous [TAILLE-FICHIER] : les
+  schémas Ninja / Pydantic d'un même domaine (`schemas.py`, `responses.py`), les exceptions
+  métier d'un même domaine, les classes de test d'un même fichier de test.
+
+### Nommage
+- **[NOMS-INTERDITS]** Jamais de noms génériques : `data`, `df`, `res`, `val`, `tmp`, `info`,
+  `obj`, `item` seul, `result` seul, `x`. Le nom dit *ce que* contient la variable
+  (`sales_by_month`, `station_coordinates`). Seule exception : un paramètre imposé par une
+  signature de framework.
+- **[VOCABULAIRE]** Le code parle comme les apps du backend, en anglais ; les textes affichés
+  (titres, axes, légendes, messages) sont en français. Les adresses des pages sont des URL
+  publiques et n'ont pas à suivre le vocabulaire du code.
+- **[BOOLEENS]** Un booléen est préfixé : `is`, `has`, `should`, `can` côté frontend
+  (`isLoading`, `hasMissingValues`) ; `is_`, `has_`, `should_`, `can_` côté backend. Les champs
+  déjà publiés dans l'API restent tels quels ([CONTRAT-FIGE]).
+- **[CASSE]** Composants Vue en PascalCase préfixé par le domaine (`ChartLegend`,
+  `MapTooltip`) ; classes Python en PascalCase ; fonctions et variables Python en snake_case ;
+  constantes en `UPPER_SNAKE_CASE`.
+
+### Valeurs magiques
+- **[ZERO-MAGIE]** Pas de littéral métier en dur (statut, rôle, seuil, délai, prix, couleur,
+  nom de colonne répété) : constantes dans `utils/constants.ts` ou enums TypeScript côté
+  frontend ; `TextChoices` / `IntegerChoices` ou constante nommée en tête de module côté
+  backend. Ne sont pas magiques : `0`, `1`, `-1`, `""`, `None`, les index et les littéraux des
+  tests.
+
+### Argent, dates, données personnelles, secrets
+- **[ARGENT]** Tout montant est un **entier en centimes** (`*_cents`), dans la base, l'API et
+  le front. Jamais de `float` pour de l'argent ; conversion en euros uniquement à l'affichage.
+- **[FUSEAU]** Stockage en UTC (`USE_TZ = True`). Toute notion calendaire — « aujourd'hui »,
+  jour, mois, bornes d'une période — se calcule en `Europe/Paris` (`timezone.localdate()`),
+  jamais par `.date()` sur un instant UTC.
+- **[DONNEES-PERSO]** Aucune donnée personnelle (e-mail, nom, téléphone, pièce, IP complète)
+  dans les logs, les messages d'erreur, les URL, les clés de cache ou les figures : on
+  journalise l'identifiant (`user_id`), pas la personne. Toute nouvelle donnée personnelle
+  stockée est couverte par l'export et l'anonymisation RGPD dans le même lot.
+- **[SECRETS]** Aucun secret dans le code ni dans le dépôt : tout passe par l'environnement
+  (`python-decouple` côté backend, `runtimeConfig` côté frontend). Un secret commis par erreur
+  est considéré compromis et changé.
+
+### Erreurs
+- **[EXCEPTIONS]** Jamais d'exception avalée en silence (`except: pass`, `catch {}`) ni de
+  capture générique (`except Exception`) qui ne la relance pas ou ne la journalise pas.
+
+---
+
+## 2. Frontend (Nuxt et Vue 3)
+
+Dans [`frontend/CLAUDE.md`](frontend/CLAUDE.md) : code ([TS-STRICT] à [ACCESSIBILITE]) et
+stylage ([STYLE-1] à [STYLE-5], isolats CSS).
+
+---
+
+## 3. Backend (Django et Django Ninja)
+
+Dans [`backend/CLAUDE.md`](backend/CLAUDE.md) : socle ([TYPAGE] à [FICHIERS]) et piliers I à XV
+(couches, persistance, contrats, sécurité, erreurs, domaine, concurrence, observabilité,
+évolution de l'API, tests, migrations, outbox, cache, cryptographie, contrat front/back).
+
+---
+
+## 4. Standards 2026
+
+Régime **revue** tant qu'aucun contrôle ne les vérifie ; chacun a vocation à passer en cliquet
+puis en strict.
+
+### Chaîne d'approvisionnement
+- **[DEPENDANCES-FIGEES]** Toute dépendance est résolue par un lockfile commité (`uv.lock`,
+  `pnpm-lock.yaml`) ; la CI installe en mode figé (`uv sync --locked`, `--frozen-lockfile`) et
+  échoue si le lockfile dérive.
+- **[IMAGES-PAR-EMPREINTE]** Toute image de base de conteneur est épinglée par empreinte
+  `@sha256:`, jamais par un tag mobile seul.
+- **[AUDIT-VULNERABILITES]** La CI audite les dépendances à chaque commit (`pip-audit` / `uv`
+  côté backend, `pnpm audit --audit-level=high` côté frontend) ; une vulnérabilité haute ou
+  critique bloque la fusion, sauf dérogation datée et justifiée.
+- **[NOUVELLE-DEPENDANCE]** Ajouter une dépendance se justifie dans le commit : maintenue
+  (release de moins d'un an), licence compatible, pas d'équivalent déjà présent, pas de nom
+  proche d'un paquet connu (typosquatting). Les montées de version passent par Dependabot, une
+  par PR.
+- **[SBOM]** Chaque image déployée produit sa nomenclature logicielle (CycloneDX ou SPDX),
+  conservée avec la release.
+
+### Exécution durcie
+- **[CONTENEUR-DURCI]** Conteneurs *rootless* et utilisateur non-root, système de fichiers en
+  lecture seule hors volumes déclarés, `cap_drop: ALL`, aucun secret dans l'image ni dans ses
+  couches.
+- **[SANTE]** Chaque service expose une sonde de vivacité et une sonde de disponibilité
+  distinctes ; la seconde vérifie réellement ses dépendances (base, cache).
+- **[SAUVEGARDE-TESTEE]** Une sauvegarde jamais restaurée n'existe pas : la restauration est
+  répétée à intervalle régulier et chronométrée.
+
+### Sécurité navigateur
+- **[CSP-NONCE]** Content-Security-Policy stricte par *nonce* : pas de `unsafe-inline`, pas de
+  `unsafe-eval`, pas de joker d'hôte. Tout nouveau domaine tiers s'ajoute explicitement et se
+  justifie.
+- **[EN-TETES]** `Strict-Transport-Security` (préchargé), `X-Content-Type-Options: nosniff`,
+  `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` minimale,
+  `Cross-Origin-Opener-Policy: same-origin`. Vérifiés par un test.
+- **[COOKIES]** Tout cookie de session est `HttpOnly`, `Secure`, `SameSite=Lax` au minimum, et
+  préfixé `__Host-` quand il n'a pas besoin de sous-domaine.
+- **[INTEGRITE]** Aucun script tiers chargé depuis un CDN sans *Subresource Integrity*.
+
+### Observabilité
+- **[OPENTELEMETRY]** Traces distribuées OpenTelemetry (propagation W3C `traceparent`) de la
+  requête du frontend jusqu'à l'outbox et aux API tierces ; le `X-Request-ID` ([CORRELATION])
+  en est l'attribut de corrélation.
+- **[SLO]** Chaque parcours critique a un objectif de niveau de service chiffré
+  (disponibilité, latence p95) et un budget d'erreur. Un budget épuisé gèle les
+  fonctionnalités au profit de la fiabilité.
+- **[ALERTE-SUR-SYMPTOME]** On alerte sur ce que l'utilisateur subit (taux d'erreur, latence,
+  file d'outbox qui grossit), pas sur des causes internes (CPU, mémoire).
+
+### Performance
+- **[CORE-WEB-VITALS]** Budgets au 75ᵉ centile, sur mobile : **LCP < 2,5 s**, **INP < 200 ms**,
+  **CLS < 0,1**. Une régression au-delà bloque la release.
+- **[BUDGET-JS]** Budget de JavaScript par page, vérifié à la construction ; toute bibliothèque
+  lourde (moteur de graphiques, carte) est chargée à la demande (`defineAsyncComponent`, import
+  dynamique).
+- **[IMAGES-MODERNES]** Images en AVIF/WebP, dimensionnées (`width`/`height` explicites),
+  chargées en différé hors du premier écran.
+- **[LATENCE-API]** p95 < 300 ms pour une route de lecture ; une route plus lente se justifie ou
+  passe par le cache ([STAMPEDE]).
+
+### Tests
+- **[FUZZING-API]** L'API est fuzzée depuis son contrat OpenAPI (`schemathesis`) : aucune
+  entrée conforme au schéma ne provoque de 500.
+- **[TESTS-PROPRIETES]** Les calculs à invariants — agrégations, bornes de période, totaux,
+  pourcentages — ont des tests par propriétés (`hypothesis`) en plus des exemples.
+- **[TESTS-MUTATION]** Les modules de calcul critiques passent périodiquement au test par
+  mutation (`mutmut`) : un mutant qui survit est un test manquant.
+- **[E2E-PARCOURS]** Les parcours critiques ont un test de bout en bout Playwright, joué en CI
+  contre une pile complète.
+- **[ACCESSIBILITE-AUTO]** Les pages principales passent un contrôle `axe-core` automatisé ;
+  cible **WCAG 2.2 niveau AA**.
+
+### Python et TypeScript
+- **[PYTHON-MODERNE]** Syntaxe Python 3.12+ : génériques PEP 695 (`def first[T](...)`,
+  `type Alias = ...`), `X | None` plutôt que `Optional[X]`, `@override` sur toute surcharge,
+  `match` pour les aiguillages sur des statuts, `Self` pour les retours chaînés.
+- **[TYPAGE-STRICT]** mypy `strict` sur tout nouveau module ; aucun `# type: ignore` sans code
+  d'erreur précis et raison.
+- **[VUE-MODERNE]** API Vue 3.5 / Nuxt 4 : `defineModel()` pour le `v-model`,
+  `useTemplateRef()` pour les références, props déstructurées réactives, `useFetch` /
+  `useAsyncData` avec une clé explicite. Pas d'Options API.
+- **[VALIDATION-AUX-FRONTIERES]** Toute donnée qui entre (API tierce, fichier source,
+  `localStorage`, paramètre d'URL) est validée par un schéma à l'exécution avant usage : le
+  type TypeScript ne protège que ce que le compilateur voit.
+
+### Livraison continue
+- **[FEATURE-FLAGS]** Une fonctionnalité risquée se livre éteinte derrière un drapeau, puis
+  s'active sans redéploiement. Un drapeau a une date de retrait ; au-delà, il est supprimé.
+- **[DEPLOIEMENT-REVERSIBLE]** Tout déploiement est annulable en une commande, sans perte de
+  données : un déploiement qui migre le schéma ([MIGRATIONS]) se défait en restaurant la
+  sauvegarde d'avant bascule.
+- **[CI-RAPIDE]** La CI complète tient en moins de 10 minutes ; un test instable est mis en
+  quarantaine et corrigé dans la semaine, jamais relancé jusqu'à ce qu'il passe.
+
+### Développement assisté par IA
+- **[IA-RESPONSABLE]** Le code produit par un agent obéit à la même charte et à la même
+  relecture que le code humain ; celui qui fusionne en répond.
+- **[IA-CONTEXTE]** Les trois fichiers de la charte sont le contexte de référence des agents :
+  une règle que l'agent enfreint régulièrement est une règle mal écrite, à reformuler là où elle
+  vit.
+- **[IA-CONFIDENTIALITE]** Aucun secret, aucune donnée personnelle réelle n'est collée dans une
+  conversation avec un agent ; on travaille sur des données de test ou publiques.
+- **[IA-FONCTIONNALITE]** Toute fonctionnalité qui appelle un modèle de langage passe par
+  l'outbox ou une file ([HORS-REQUETE]), borne son coût par appel, journalise modèle et jetons
+  consommés, et ne laisse jamais le texte généré déclencher une action sans validation
+  (injection de consignes).
+
+---
+
+## 5. Git
+
+- **[PAS-SUR-MAIN]** Jamais de commit direct sur `main` ni sur `develop` : toujours une branche
+  dédiée, de préférence dans son propre worktree (`.claude/worktrees/<nom>`), pour que deux
+  sessions ne se croisent pas dans l'arbre principal, puis une pull request relue et approuvée
+  par un autre membre de l'équipe. C'est imposé physiquement : le crochet
+  `no-commit-to-branch` du pre-commit refuse le commit en local, et le ruleset GitHub
+  « Protection main et develop » refuse tout push direct, force-push ou suppression.
+- **[BRANCHES]** Préfixes `feat/`, `fix/`, `refactor/`, `test/`, `chore/`, `docs/` ;
+  minuscules, sans espaces, en français (`feat/carte-stations`).
+- **[COMMITS]** Petits et atomiques :
+  - **10 fichiers au plus** par commit ;
+  - titre de **50 caractères au plus**, en français, préfixé par le type, avec une portée
+    facultative : `feat:`, `fix:`, `refactor:`, `style:`, `docs:`, `perf:`, `test:`,
+    `build:`, `ci:`, `chore:`, `revert:` (`fix(carte): …`) ;
+  - un commit de migration ne mélange pas schéma et logique métier ;
+  - jamais de mention `Co-Authored-By: Claude` ni `Claude-Session:` dans le message ;
+  - jamais `--author` : l'auteur reste celui de `git config`.
+- **[FUSION]** Fusion de la PR sur GitHub en commit de fusion (pas de squash ni de rebase),
+  puis suppression de la branche (et du worktree, s'il y en avait un).
