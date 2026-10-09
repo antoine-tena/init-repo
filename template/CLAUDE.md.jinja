@@ -27,14 +27,16 @@ La charte tient en {{ 'trois' if back_label and front_label else 'deux' }} fichi
 ## Langue
 
 - Échanges, documentation et messages de commit en français ; code en anglais.
-{% if avec_a_faire %}
+
 ## Où est l'état du projet
 
 - **`docs/a-faire/` est la seule source à jour** : [`a-faire.md`](docs/a-faire/a-faire.md), la
   liste unique de ce qui reste, rangée par criticité (une entrée `AF-NN` par chose, avec son
-  état et son détail ; ce qui est terminé est dans sa section « Fait »), et
-  [`ecarte.md`](docs/a-faire/ecarte.md), ce qui a été refusé. Skill `base:a-faire`.
-{% endif %}
+  état et son détail ; ce qui est terminé est dans sa section « Fait »),
+  [`ecarte.md`](docs/a-faire/ecarte.md), ce qui a été refusé, et
+  [`urgent.md`](docs/a-faire/urgent.md), ce que seul un humain de l'équipe peut faire (une case
+  par action). Skill `base:a-faire` ; la status line de Claude Code les compte.
+
 ---
 
 ## 0. Mode d'emploi de la charte

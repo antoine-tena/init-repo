@@ -81,19 +81,27 @@ podman:
   help: Conteneurs podman (Containerfile, compose.yaml, PostgreSQL) ? Activable plus tard par `kiln set podman=true`.
   default: false
 
-avec_a_faire:
-  type: bool
-  help: Suivre le travail dans docs/a-faire/ (liste unique par criticité, skill base:a-faire) ?
-  default: false
-
+# Suivi du travail, d'office dans tout repo : docs/a-faire/ (skill base:a-faire).
 boussole:
   type: str
   help: L'objectif qui ordonne les priorités de docs/a-faire/
   default: "{{ titre }} en service"
-  when: "{{ avec_a_faire }}"
 
 date_creation:
   type: str
   help: Date de création du suivi (AAAA-MM-JJ)
   default: "{{ '%Y-%m-%d' | strftime }}"
-  when: "{{ avec_a_faire }}"
+
+# Status line de Claude Code (~/.claude/statusline.py) : réglages posés en `git config` par
+# `kiln install`, `kiln new` et `kiln set`, jamais à la main.
+statusline_ci:
+  type: bool
+  help: Afficher l'état de la CI dans la status line de Claude Code ?
+  default: true
+
+url_sante_prod:
+  type: str
+  help: >-
+    Sonde de santé de la production, qui renvoie {"version": "<sha>"} (vide s'il n'y a pas de
+    production) ; la status line affiche « prod ✔ » ou le retard
+  default: ""
