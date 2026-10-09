@@ -10,9 +10,11 @@ from kiln.deps import lock_dependencies, sync_dependencies, update_dependencies
 from kiln.rules import write_unverified_rules
 from kiln.shell import KilnError, capture, require_tools, run, step
 from kiln.stack import ANSWERS_FILE, load_stack
-from kiln.template import TEMPLATE_REVISION
+from kiln.template import DEFAULT_TEMPLATE_SOURCE, TEMPLATE_REVISION
 
 PROTECTED_BRANCHES = ("main", "develop")
+# Ancienne adresse du modèle (init-repo, renommé kiln) : GitHub redirige, mais on la remplace.
+LEGACY_TEMPLATE_SOURCES = ("https://github.com/antoine-tena/init-repo.git",)
 
 
 def update_project(
@@ -43,6 +45,7 @@ def update_project(
 def apply_template(root: Path, answers: Mapping[str, object] | None = None) -> None:
     """Modèle réappliqué (révision la plus récente, réponses éventuellement changées), sans
     écraser les modifications locales : les conflits sont marqués dans les fichiers."""
+    replace_legacy_source(root)
     copier.run_update(
         root,
         data=dict(answers or {}),
@@ -69,3 +72,11 @@ def report_changes(root: Path) -> None:
     step("Fichiers modifiés")
     run(["git", "status", "--short"], root)
     print("\nRelire le diff (conflits marqués <<<<<<<), puis commiter et ouvrir une PR.")
+
+
+def replace_legacy_source(root: Path) -> None:
+    answers_path = root / ANSWERS_FILE
+    text = answers_path.read_text()
+    for legacy_source in LEGACY_TEMPLATE_SOURCES:
+        text = text.replace(f"_src_path: {legacy_source}", f"_src_path: {DEFAULT_TEMPLATE_SOURCE}")
+    answers_path.write_text(text)
