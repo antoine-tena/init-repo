@@ -1,0 +1,60 @@
+name: Sécurité des dépendances
+
+# Échoue tant qu'une dépendance connue pour être vulnérable reste en place : `uv audit` pour
+# chaque projet uv, `pnpm audit` pour chaque front pnpm. Les montées de version passent par
+# `kiln update` ; les alertes de sécurité GitHub restent actives.
+on:
+  workflow_call:
+    inputs:
+      uv:
+        description: Dossiers des projets uv, séparés par des espaces (vide = aucun)
+        type: string
+        default: backend
+      pnpm:
+        description: Dossier du front pnpm (vide = aucun)
+        type: string
+        default: frontend
+      version-pnpm:
+        description: Version de pnpm (vide = champ packageManager de package.json)
+        type: string
+        default: ""
+      niveau:
+        description: Gravité minimale qui fait échouer pnpm audit
+        type: string
+        default: high
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v7
+        if: inputs.uv != ''
+
+      - name: uv audit
+        if: inputs.uv != ''
+        env:
+          DOSSIERS: ${{ inputs.uv }}
+        run: |
+          for dossier in $DOSSIERS; do
+            echo "::group::uv audit $dossier"
+            (cd "$dossier" && uv audit --locked --preview-features audit-command)
+            echo "::endgroup::"
+          done
+
+      - uses: pnpm/action-setup@v6
+        if: always() && inputs.pnpm != ''
+        with:
+          version: ${{ inputs.version-pnpm }}
+          package_json_file: ${{ inputs.pnpm }}/package.json
+
+      - uses: actions/setup-node@v7
+        if: always() && inputs.pnpm != ''
+        with:
+          node-version-file: ${{ inputs.pnpm }}/.nvmrc
+
+      - name: pnpm audit
+        if: always() && inputs.pnpm != ''
+        run: pnpm audit --prod --audit-level ${{ inputs.niveau }}
+        working-directory: ./${{ inputs.pnpm }}

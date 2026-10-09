@@ -1,0 +1,83 @@
+name: Infra
+
+# Ce qui n'était vérifié que sur le serveur, au pire moment : images de conteneur (podman),
+# workflows GitHub (actionlint), scripts shell (shellcheck), Caddyfile et pile compose.
+# Jamais docker : podman construit et lance, podman-compose (installé par uv) lit le compose.
+on:
+  workflow_call:
+    inputs:
+      image:
+        description: Dossiers des images à construire (Containerfile), séparés par des espaces
+        type: string
+        default: ""
+      shellcheck:
+        description: Motifs des scripts à relire, séparés par des espaces (vide = rien)
+        type: string
+        default: ""
+      caddyfile:
+        description: Caddyfile à valider (vide = rien)
+        type: string
+        default: ""
+      compose:
+        description: Fichier compose à valider (vide = rien)
+        type: string
+        default: ""
+      preparation:
+        description: Commandes lancées avant la validation du compose (fichiers qu'il attend…)
+        type: string
+        default: ""
+      env:
+        description: Variables pour la validation du compose, une par ligne (CLE=valeur)
+        type: string
+        default: ""
+
+jobs:
+  infra:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v7
+
+      - name: Images (podman)
+        if: inputs.image != ''
+        env:
+          DOSSIERS: ${{ inputs.image }}
+        run: |
+          for dossier in $DOSSIERS; do
+            echo "::group::podman build $dossier"
+            podman build --pull -t "ci-${GITHUB_RUN_ID}-$(basename "$dossier")" "$dossier"
+            echo "::endgroup::"
+          done
+
+      # Un « : » nu dans un `run:` a déjà rendu un workflow illisible sans que rien ne le signale.
+      # Le shell des `run:` n'est pas relu ici ; les scripts le sont par l'étape suivante.
+      - name: actionlint (workflows GitHub)
+        run: uvx --from actionlint-py actionlint -color -shellcheck= -pyflakes=
+
+      - name: shellcheck
+        if: inputs.shellcheck != ''
+        env:
+          MOTIFS: ${{ inputs.shellcheck }}
+        run: |
+          # shellcheck disable=SC2086 # motifs développés par le shell
+          uvx --from shellcheck-py shellcheck $MOTIFS
+
+      - name: Caddyfile
+        if: inputs.caddyfile != ''
+        run: |
+          podman run --rm -v "$PWD/${{ inputs.caddyfile }}:/etc/caddy/Caddyfile:ro,Z" \
+            docker.io/library/caddy:2 \
+            sh -c 'mkdir -p /var/log/caddy && caddy validate --adapter caddyfile --config /etc/caddy/Caddyfile'
+
+      - name: Pile compose
+        if: inputs.compose != ''
+        env:
+          PREPARATION: ${{ inputs.preparation }}
+          VARIABLES: ${{ inputs.env }}
+        run: |
+          [ -z "$PREPARATION" ] || bash -c "$PREPARATION"
+          set -a
+          eval "$(printf '%s\n' "$VARIABLES" | grep -v '^\s*$')"
+          set +a
+          uvx podman-compose -f "${{ inputs.compose }}" config > /dev/null

@@ -1,0 +1,19 @@
+name: charte (kiln)
+description: >-
+  Installe kiln avec uv (commandes `kiln` et `charte`) et les met dans le PATH du job.
+inputs:
+  ref:
+    description: Révision de kiln à installer
+    default: main
+runs:
+  using: composite
+  steps:
+    - uses: astral-sh/setup-uv@v7
+
+    - name: kiln et charte
+      shell: bash
+      env:
+        REF: ${{ inputs.ref }}
+      run: |
+        uv tool install --python 3.14 "git+https://github.com/antoine-tena/kiln@${REF}"
+        uv tool dir --bin >> "$GITHUB_PATH"

@@ -1,0 +1,47 @@
+name: Services de test (podman)
+description: >-
+  Lance PostgreSQL et, au besoin, Redis avec podman (jamais docker), attend qu'ils répondent et
+  pose DATABASE_URL et REDIS_URL dans l'environnement du job.
+inputs:
+  base:
+    description: Nom de la base, de son utilisateur et préfixe de son mot de passe
+    default: app
+  postgres:
+    description: Image PostgreSQL (vide = pas de base)
+    default: docker.io/library/postgres:16-alpine
+  redis:
+    description: Image Redis (vide = pas de Redis)
+    default: ""
+runs:
+  using: composite
+  steps:
+    - name: PostgreSQL
+      if: inputs.postgres != ''
+      shell: bash
+      env:
+        BASE: ${{ inputs.base }}
+        IMAGE: ${{ inputs.postgres }}
+      run: |
+        podman run -d --name ci-postgres -p 5432:5432 \
+          -e POSTGRES_USER="$BASE" -e POSTGRES_PASSWORD="${BASE}_password" -e POSTGRES_DB="$BASE" \
+          "$IMAGE"
+        for _ in $(seq 1 30); do
+          podman exec ci-postgres pg_isready -U "$BASE" >/dev/null 2>&1 && break
+          sleep 2
+        done
+        podman exec ci-postgres pg_isready -U "$BASE"
+        echo "DATABASE_URL=postgres://${BASE}:${BASE}_password@localhost:5432/${BASE}" >> "$GITHUB_ENV"
+
+    - name: Redis
+      if: inputs.redis != ''
+      shell: bash
+      env:
+        IMAGE: ${{ inputs.redis }}
+      run: |
+        podman run -d --name ci-redis -p 6379:6379 "$IMAGE"
+        for _ in $(seq 1 30); do
+          podman exec ci-redis redis-cli ping >/dev/null 2>&1 && break
+          sleep 2
+        done
+        podman exec ci-redis redis-cli ping
+        echo "REDIS_URL=redis://localhost:6379/1" >> "$GITHUB_ENV"
