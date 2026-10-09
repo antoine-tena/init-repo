@@ -4,7 +4,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from kiln import check, dev, install, new, update
+from kiln import check, dev, install, new, settings, update
 from kiln.shell import KilnError, repo_root
 
 EXIT_FAILURE = 1
@@ -16,8 +16,11 @@ def build_parser() -> argparse.ArgumentParser:
     _add_new_command(commands)
     commands.add_parser("install", help="préparer le poste après un clone")
     _add_update_command(commands)
-    commands.add_parser("dev", help="lancer le projet en local")
+    dev_parser = commands.add_parser("dev", help="lancer le projet en local")
+    dev_parser.add_argument("--containers", action="store_true", help="toute la pile dans podman")
     commands.add_parser("check", help="lancer les contrôles du projet")
+    set_parser = commands.add_parser("set", help="afficher ou changer les paramètres du repo")
+    set_parser.add_argument("assignments", nargs="*", metavar="clé=valeur")
     return parser
 
 
@@ -39,6 +42,7 @@ def _add_update_command(commands: argparse._SubParsersAction[argparse.ArgumentPa
     update_parser = commands.add_parser("update", help="mettre à jour modèle et dépendances")
     update_parser.add_argument("--no-template", action="store_true", help="garder l'architecture")
     update_parser.add_argument("--no-deps", action="store_true", help="garder les dépendances")
+    update_parser.add_argument("--major", action="store_true", help="versions majeures comprises")
 
 
 def _new_project_request(arguments: argparse.Namespace) -> new.NewProjectRequest:
@@ -74,11 +78,17 @@ def dispatch(arguments: argparse.Namespace) -> None:
             root,
             should_update_template=not arguments.no_template,
             should_update_deps=not arguments.no_deps,
+            allow_major=arguments.major,
         )
     elif arguments.command == "dev":
-        dev.run_dev_servers(root)
+        dev.run_dev_servers(root, in_containers=arguments.containers)
     elif arguments.command == "check":
         check.check_project(root)
+    elif arguments.command == "set":
+        if arguments.assignments:
+            settings.apply_settings(root, arguments.assignments)
+        else:
+            settings.show_settings(root)
 
 
 def main() -> None:
