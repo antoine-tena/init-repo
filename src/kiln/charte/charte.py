@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """charte — vérifie un repo contre les règles de sa charte (CLAUDE.md), décrites dans le
-`charte.toml` de sa racine. Installée avec init-repo, à côté de la commande `init-repo`.
+`charte.toml` de sa racine. Installée avec kiln, à côté de la commande `kiln`.
 
 Une charte que rien n'exécute décrit un projet qui n'existe pas. Deux régimes, parce qu'un
 contrôle qui échoue sur 47 fichiers dès le premier jour finit désactivé :
@@ -31,10 +31,10 @@ import sys
 import tomllib
 from pathlib import Path
 
-from init_repo.charte.cliquets import COMPTEURS
-from init_repo.charte.interdictions import REGLES
-from init_repo.charte.moteur import Depot, echec
-from init_repo.charte.outils_python import couverture, types
+from kiln.charte.cliquets import COMPTEURS
+from kiln.charte.interdictions import REGLES
+from kiln.charte.moteur import Depot, echec
+from kiln.charte.outils_python import couverture, types
 
 FIN_RAPPORT = "Règles de CLAUDE.md non vérifiées"
 
@@ -141,7 +141,7 @@ def main() -> int:
 
 
 def lancer() -> None:
-    """Point d'entrée de la commande `charte` installée avec init-repo."""
+    """Point d'entrée de la commande `charte` installée avec kiln."""
     sys.exit(main())
 
 
