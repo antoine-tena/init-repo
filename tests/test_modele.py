@@ -75,6 +75,7 @@ def test_podman_adds_containers_for_every_stack(
         if (project_dir / directory).is_dir():
             containerfile = (project_dir / directory / "Containerfile").read_text()
             instructions = [line for line in containerfile.splitlines() if not line.startswith("#")]
+            # Outil interdit : la règle [UV-PODMAN] est justement vérifiée ici.
             assert not [line for line in instructions if "pip install" in line or "docker " in line]
     assert compose["services"]
 
