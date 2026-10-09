@@ -1,0 +1,39 @@
+# Frontend — charte
+
+Section 2 de la charte {{ titre }}, chargée quand on travaille dans `frontend/`. Le mode d'emploi
+(identifiants, régimes, hiérarchie), les règles communes (§1), les standards 2026 (§4) et Git
+(§5) sont dans le `CLAUDE.md` de la racine. Documentation d'Astro : https://docs.astro.build
+(routage, composants, collections de contenu, styles) ; `AGENTS.md` en donne les entrées.
+
+## 2. Frontend (Astro 7)
+
+Lancer : `pnpm dev` (ou `kiln dev` ; un agent lance `astro dev --background`, puis
+`astro dev stop`). Vérifier : `pnpm typecheck` (`astro check`, ou `kiln check`).
+
+### Code
+- **[TS-STRICT]** TypeScript au réglage `strictest` d'Astro, dans les `.ts` comme dans le
+  frontmatter et les `<script>` des `.astro`.
+- **[ZERO-ANY]** Zéro `any` : `unknown` puis un rétrécissement de type.
+- **[ASYNC]** `async/await` avec `try/catch` uniquement ; chaînes `.then().catch()` interdites.
+- **[STATIQUE-D-ABORD]** Une page est rendue au build. Le rendu à la demande ou un îlot
+  (`client:*`) se justifie par un besoin d'interaction ou de donnée fraîche, au point d'appel.
+- **[CONTENU]** Le contenu éditorial (articles, pages de documentation) vit dans des collections
+  de contenu (`src/content/`), typées par un schéma : jamais de texte long écrit dans une page.
+- **[APPELS-API]** Une page n'appelle pas l'API en ligne : elle passe par une fonction de
+  `src/lib/`, typée, qui valide la réponse avant de la rendre.
+- **[ETATS-UI]** Toute zone qui charge des données au navigateur traite explicitement les trois
+  états : chargement, erreur (message compréhensible) et liste vide.
+- **[ACCESSIBILITE]** Chaque champ a un `<label>` associé, chaque bouton-icône un
+  `aria-label`, chaque image informative un `alt` (`<Image />` d'Astro). Tout est utilisable au
+  clavier et le focus reste visible.
+
+### Stylage
+- **[STYLE-1]** Aucune balise `<style>` dans un `.astro` : un composant ne contient que du
+  balisage (classes utilitaires) et, au besoin, un `<script>`.
+- **[STYLE-2]** **Tailwind par défaut**, directement dans le balisage. CSS déporté seulement pour
+  une animation à étapes, un élément natif du navigateur ou un composant tiers boîte noire.
+- **[STYLE-3]** `src/styles/global.css` est le seul fichier CSS, importé par le gabarit de base :
+  il importe Tailwind et porte les jetons de thème (`@theme`). Un composant écrit la classe d'un
+  jeton, jamais une valeur arbitraire qui le recopie.
+- **[STYLE-5]** Anti-patterns interdits : classes arbitraires en rafale, `@apply` pour recréer
+  un composant, `!important` hors surcharge d'une bibliothèque tierce qui l'impose.

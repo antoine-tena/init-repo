@@ -29,7 +29,9 @@ jobs:
     uses: antoine-tena/kiln/.github/workflows/pnpm.yml@main
     with:
       scripts: |
+{%- if frontend != 'astro' %}
         lint
+{%- endif %}
         typecheck
         build
 {%- elif frontend in ['streamlit', 'dash'] %}
