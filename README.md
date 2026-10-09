@@ -8,8 +8,8 @@ tient à jour (architecture et dépendances) :
 - outillage partagé : `.claude/` (plugins `pile-django` et `pile-nuxt`, variables `PROJET_*`),
   `.vscode/`, `.editorconfig`, `.gitattributes`, `.gitignore`, modèle de PR, `CODEOWNERS`,
   pre-commit (ruff, charte, refus de commiter sur `main` et `develop`) ;
-- CI GitHub (`.github/workflows/ci.yml`) qui appelle les workflows réutilisables des dotfiles
-  d'antoine-tena : backend, frontend, charte, audit des dépendances ;
+- CI GitHub (`.github/workflows/ci.yml`) qui appelle les workflows réutilisables de kiln :
+  backend, frontend, charte, audit des dépendances ;
 - en option (`--todo "<boussole>"`), le suivi du travail dans `docs/a-faire/` ;
 - backend Django + Django Ninja (uv, mypy strict, ruff, pytest) ;
 - frontend Nuxt 4 + Vue 3 + Tailwind 4 (pnpm, TypeScript strict) ;
@@ -72,5 +72,24 @@ uv run ruff check . && uv run mypy src tests
 docstring de chaque règle. Règle propre à un repo : un module listé dans `regles_locales`,
 avec `verifier(depot, params) -> list[str]`.
 
-La CI des projets dépend des workflows des dotfiles d'antoine-tena, partagés avec les dépôts de
-ce compte : un projet généré sous un autre compte doit remplacer `ci.yml`.
+## Workflows réutilisables
+
+kiln est public : ses workflows servent à n'importe quel dépôt, quel que soit son compte
+(`uses: antoine-tena/kiln/.github/workflows/<nom>.yml@main`). Jamais pip ni docker : uv pour
+Python, podman pour les conteneurs (bases de test comprises), podman-compose installé par uv.
+
+| Workflow | Rôle |
+|---|---|
+| `django.yml` | Backend Django : ruff, `charte types`, migrations manquantes, pytest et couverture, contre PostgreSQL et Redis lancés par podman. |
+| `python.yml` | Tout projet uv (FastAPI, données, Streamlit, Dash) : ruff, `charte types`, pytest et couverture ; PostgreSQL en option. |
+| `pnpm.yml` | Front pnpm (Nuxt, Next.js, Astro) : scripts de `package.json` dans l'ordre ; pnpm pris dans `packageManager`. |
+| `charte.yml` | Règles de `charte.toml`. |
+| `securite.yml` | `uv audit` et `pnpm audit`. |
+| `contrat-api.yml` | `openapi.json` et types du front à jour du code. |
+| `infra.yml` | Images (`podman build`), actionlint, shellcheck, Caddyfile, compose (podman-compose). |
+| `sbom.yml` | Nomenclatures CycloneDX du back et du front. |
+| `mutation.yml` | Tests par mutation (mutmut), jamais bloquants. |
+| `vercel.yml` | Déploiement du front sur Vercel. |
+
+Actions : `actions/charte` (installe kiln et `charte`), `actions/services` (PostgreSQL et Redis
+par podman, `DATABASE_URL` et `REDIS_URL` posées).
