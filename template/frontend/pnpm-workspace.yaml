@@ -8,3 +8,9 @@ allowBuilds:
 
 # Versions exactes dans package.json, y compris après `init-repo maj` ([DEPENDANCES-FIGEES]).
 saveExact: true
+
+# `init-repo maj` ne monte pas ces dépendances d'une version majeure : TypeScript 7 casse
+# vue-tsc 3 (octobre 2026). À retirer dès qu'une version de vue-tsc le prend en charge.
+updateConfig:
+  ignoreDependencies:
+    - typescript
