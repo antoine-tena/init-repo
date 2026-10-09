@@ -1,0 +1,16 @@
+# Scripts d'installation des dépendances : refusés, les binaires précompilés suffisent.
+allowBuilds:
+  '@parcel/watcher': false
+  '@tailwindcss/oxide': false
+  esbuild: false
+  unrs-resolver: false
+  vue-demi: false
+
+# Versions exactes dans package.json, y compris après `init-repo maj` ([DEPENDANCES-FIGEES]).
+saveExact: true
+
+# `init-repo maj` ne monte pas ces dépendances d'une version majeure : TypeScript 7 casse
+# vue-tsc 3 (octobre 2026). À retirer dès qu'une version de vue-tsc le prend en charge.
+updateConfig:
+  ignoreDependencies:
+    - typescript
