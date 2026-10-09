@@ -4,7 +4,8 @@ import argparse
 import sys
 from pathlib import Path
 
-from kiln import check, dev, install, new, settings, update
+from kiln import check, dev, fleet, install, new, settings, update
+from kiln.config import load_config
 from kiln.shell import KilnError, repo_root
 
 EXIT_FAILURE = 1
@@ -22,6 +23,8 @@ def build_parser() -> argparse.ArgumentParser:
     dev_parser = commands.add_parser("dev", help="lancer le projet en local")
     dev_parser.add_argument("--containers", action="store_true", help="toute la pile dans podman")
     commands.add_parser("check", help="lancer les contrôles du projet")
+    status_parser = commands.add_parser("status", help="état des repos kiln du dossier de code")
+    status_parser.add_argument("--all", action="store_true", help="(par défaut) tous les repos")
     set_parser = commands.add_parser("set", help="afficher ou changer les paramètres du repo")
     set_parser.add_argument("assignments", nargs="*", metavar="clé=valeur")
     return parser
@@ -50,6 +53,9 @@ def _add_update_command(commands: argparse._SubParsersAction[argparse.ArgumentPa
     update_parser.add_argument("--no-template", action="store_true", help="garder l'architecture")
     update_parser.add_argument("--no-deps", action="store_true", help="garder les dépendances")
     update_parser.add_argument("--major", action="store_true", help="versions majeures comprises")
+    update_parser.add_argument(
+        "--all", action="store_true", help="tous les repos kiln, une PR chacun"
+    )
 
 
 def _new_project_request(arguments: argparse.Namespace) -> new.NewProjectRequest:
@@ -86,6 +92,9 @@ def dispatch(arguments: argparse.Namespace) -> None:
     if arguments.command == "new":
         new.create_project(_new_project_request(arguments))
         return
+    if arguments.command == "status" or (arguments.command == "update" and arguments.all):
+        _dispatch_fleet(arguments)
+        return
     root = repo_root(Path.cwd())
     if arguments.command == "install":
         install.install_project(root)
@@ -105,6 +114,14 @@ def dispatch(arguments: argparse.Namespace) -> None:
             settings.apply_settings(root, arguments.assignments)
         else:
             settings.show_settings(root)
+
+
+def _dispatch_fleet(arguments: argparse.Namespace) -> None:
+    code_dir = load_config().code_dir
+    if arguments.command == "status":
+        fleet.show_status(code_dir)
+    else:
+        fleet.update_all(code_dir, allow_major=arguments.major)
 
 
 def main() -> None:
