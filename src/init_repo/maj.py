@@ -27,6 +27,8 @@ def update_project(root: Path, *, should_update_template: bool, should_update_de
         )
     if should_update_deps:
         _update_dependencies(root)
+    elif should_update_template:
+        _sync_lockfiles(root)
     step("Fichiers modifiés")
     run(["git", "status", "--short"], root)
     print("\nRelire le diff (conflits marqués <<<<<<<), puis commiter et ouvrir une PR.")
@@ -43,6 +45,14 @@ def _check_working_branch(root: Path) -> None:
         raise InitRepoError(f"sur {branch} : créer d'abord une branche (ex. chore/maj-init-repo)")
     if capture(["git", "status", "--porcelain"], root):
         raise InitRepoError("arbre non propre : commiter ou mettre de côté les modifications")
+
+
+def _sync_lockfiles(root: Path) -> None:
+    """Le modèle a pu ajouter ou retirer des dépendances : verrous recalculés, sans montée."""
+    step("Verrous des dépendances")
+    run(["uv", "lock"], root / "backend")
+    run(["uv", "sync"], root / "backend")
+    run(["pnpm", "install"], root / "frontend")
 
 
 def _update_dependencies(root: Path) -> None:
