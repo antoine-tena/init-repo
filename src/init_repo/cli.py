@@ -23,7 +23,7 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _add_new_command(commands: "argparse._SubParsersAction[argparse.ArgumentParser]") -> None:
+def _add_new_command(commands: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     new_parser = commands.add_parser("nouveau", help="générer un nouveau projet complet")
     new_parser.add_argument("dossier", type=Path, help="dossier du projet à créer")
     new_parser.add_argument("--nom", help="nom court (par défaut : nom du dossier)")
