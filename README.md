@@ -2,9 +2,14 @@
 
 Génère un projet complet en une commande, puis le tient à jour :
 
-- charte de code (`CLAUDE.md` à la racine, dans `backend/` et `frontend/`) ;
-- outillage partagé : `.claude/`, `.vscode/`, `.editorconfig`, `.gitattributes`, `.gitignore`,
-  modèle de PR, `CODEOWNERS`, pre-commit (dont le refus de commiter sur `main` et `develop`) ;
+- charte de code (`CLAUDE.md` à la racine, dans `backend/` et `frontend/`), dont les règles
+  contrôlables sont décrites dans `charte.toml` et vérifiées par la commande `charte` ;
+- outillage partagé : `.claude/` (plugins `pile-django` et `pile-nuxt`, variables `PROJET_*`),
+  `.vscode/`, `.editorconfig`, `.gitattributes`, `.gitignore`, modèle de PR, `CODEOWNERS`,
+  pre-commit (ruff, charte, refus de commiter sur `main` et `develop`) ;
+- CI GitHub (`.github/workflows/ci.yml`) qui appelle les workflows réutilisables des dotfiles
+  d'antoine-tena : backend, frontend, charte, audit des dépendances ;
+- en option (`--a-faire "<boussole>"`), le suivi du travail dans `docs/a-faire/` ;
 - backend Django + Django Ninja (uv, mypy strict, ruff, pytest) ;
 - frontend Nuxt 4 + Vue 3 + Tailwind 4 (pnpm, TypeScript strict) ;
 - au besoin, le dépôt GitHub privé, avec `main` et `develop` protégées.
@@ -22,7 +27,8 @@ Prérequis : [uv](https://docs.astral.sh/uv/), [pnpm](https://pnpm.io/) (avec No
 uv tool install git+https://github.com/antoine-tena/init-repo
 ```
 
-Mettre l'outil lui-même à jour : `uv tool upgrade init-repo`.
+Installe deux commandes : `init-repo` et `charte`. Mettre l'outil à jour :
+`uv tool upgrade init-repo`. Python 3.14 est requis ; uv le télécharge au besoin.
 
 ## Commandes
 
@@ -33,9 +39,10 @@ Mettre l'outil lui-même à jour : `uv tool upgrade init-repo`.
 | `init-repo dev` | Lance le backend (:8000) et le frontend (:3000) ensemble. |
 | `init-repo maj` | Sur une branche, arbre propre : rapporte les évolutions du modèle, met à jour les dépendances, puis lance les contrôles. |
 | `init-repo verifier` | Ruff, mypy et pytest côté backend, contrôle des types côté frontend. |
+| `charte` | Vérifie le repo contre son `charte.toml` (`charte --detail`, `charte types`, `charte couverture`). |
 
 Options de `nouveau` : `--nom`, `--titre`, `--description`, `--proprietaire`,
-`--equipe login1,login2` (relecteurs du `CODEOWNERS`), `--github` (crée le dépôt privé,
+`--equipe login1,login2` (relecteurs du `CODEOWNERS`), `--a-faire "<boussole>"`, `--github` (crée le dépôt privé,
 protège `main` et `develop`, invite l'équipe), `--sans-installation`, `--modele <chemin ou URL>`.
 Les questions sans option sont posées dans le terminal.
 
@@ -53,3 +60,16 @@ questions sont dans [`copier.yml`](copier.yml).
 uv run pytest            # le modèle se génère et se remplit correctement
 uv run ruff check . && uv run mypy src tests
 ```
+
+## Moteur de charte
+
+`src/init_repo/charte/` lit le `charte.toml` à la racine du repo. Interdictions (`signaux-django`,
+`journalisation`, `migrations-django`, `temps-constant`, `donnees-perso`, `style-vue`,
+`renvois-audit`, `fichiers-interdits`, `copies`, `compose-profils`), cliquets et planchers
+(`taille-fichier`, `routes-longues`, `verrous-django`, `occurrences`, `densite-tests`),
+`[types]` (mypy en cliquet) et `[couverture]` (planchers de pytest-cov) ; paramètres dans la
+docstring de chaque règle. Règle propre à un repo : un module listé dans `regles_locales`,
+avec `verifier(depot, params) -> list[str]`.
+
+La CI des projets dépend des workflows des dotfiles d'antoine-tena, partagés avec les dépôts de
+ce compte : un projet généré sous un autre compte doit remplacer `ci.yml`.
