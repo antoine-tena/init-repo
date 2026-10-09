@@ -42,7 +42,8 @@ def _add_new_command(commands: argparse._SubParsersAction[argparse.ArgumentParse
     new_parser.add_argument("--backend", choices=BACKENDS, help="backend (sinon conseillé)")
     new_parser.add_argument("--frontend", choices=FRONTENDS, help="frontend (sinon conseillé)")
     new_parser.add_argument("--podman", action="store_true", help="conteneurs podman")
-    new_parser.add_argument("--todo", metavar="GOAL", help="suivi docs/a-faire/ et sa boussole")
+    new_parser.add_argument("--goal", help="boussole du suivi docs/a-faire/")
+    new_parser.add_argument("--prod-url", help="sonde de santé de la production (status line)")
     new_parser.add_argument("--github", action="store_true", help="créer et protéger le dépôt")
     new_parser.add_argument("--no-install", action="store_true", help="ne rien installer")
     new_parser.add_argument("--template", help="source du modèle (chemin ou URL git)")
@@ -73,8 +74,10 @@ def _new_project_request(arguments: argparse.Namespace) -> new.NewProjectRequest
             answers[key] = value
     if arguments.podman:
         answers["podman"] = True
-    if arguments.todo:
-        answers.update({"avec_a_faire": True, "boussole": arguments.todo})
+    if arguments.goal:
+        answers["boussole"] = arguments.goal
+    if arguments.prod_url:
+        answers["url_sante_prod"] = arguments.prod_url
     if arguments.owner:
         answers["proprietaire"] = arguments.owner
     if arguments.team:
