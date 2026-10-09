@@ -1,0 +1,16 @@
+# Image de frontend/ : tableau de bord Streamlit.
+# Construite depuis la racine du dépôt (compose.yaml, ou podman build -f <dossier>/Containerfile .).
+# uv seul, jamais pip ; utilisateur non-root ([CONTENEUR-DURCI]).
+FROM ghcr.io/astral-sh/uv:python3.14-bookworm-slim
+ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy UV_PYTHON_DOWNLOADS=never PYTHONUNBUFFERED=1
+{%- if backend == 'data' %}
+COPY backend/ /srv/backend/
+{%- endif %}
+WORKDIR /srv/frontend
+COPY frontend/pyproject.toml frontend/uv.lock frontend/.python-version ./
+RUN uv sync --locked --no-dev --no-install-project
+COPY frontend/ ./
+RUN uv sync --locked --no-dev && useradd --system --create-home app && chown -R app /srv
+USER app
+EXPOSE 8501
+CMD ["uv", "run", "--no-sync", "streamlit", "run", "app.py", "--server.address", "0.0.0.0", "--server.port", "8501"]
