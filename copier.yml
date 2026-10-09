@@ -30,3 +30,20 @@ equipe:
   type: yaml
   help: Logins GitHub de l'équipe (relecteurs), en liste YAML
   default: "[{{ proprietaire }}]"
+
+avec_a_faire:
+  type: bool
+  help: Suivre le travail dans docs/a-faire/ (liste unique par criticité, skill base:a-faire) ?
+  default: false
+
+boussole:
+  type: str
+  help: L'objectif qui ordonne les priorités de docs/a-faire/
+  default: "{{ titre }} en service"
+  when: "{{ avec_a_faire }}"
+
+date_creation:
+  type: str
+  help: Date de création du suivi (AAAA-MM-JJ)
+  default: "{{ '%Y-%m-%d' | strftime }}"
+  when: "{{ avec_a_faire }}"

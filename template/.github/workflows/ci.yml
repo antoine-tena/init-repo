@@ -1,0 +1,33 @@
+name: CI
+
+# Les workflows réutilisables vivent dans les dotfiles d'antoine-tena : ils évoluent pour tous
+# les projets à la fois. Le projet ne garde ici que ses paramètres.
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  backend:
+    uses: antoine-tena/dotfiles/.github/workflows/django.yml@main
+    with:
+      env: |
+        DJANGO_SECRET_KEY=ci-sans-valeur-secrete
+        DJANGO_DEBUG=True
+
+  frontend:
+    uses: antoine-tena/dotfiles/.github/workflows/nuxt.yml@main
+    with:
+      pnpm: "12.8.1"
+      scripts: |
+        typecheck
+        build
+
+  charte:
+    uses: antoine-tena/dotfiles/.github/workflows/charte.yml@main
+
+  securite:
+    uses: antoine-tena/dotfiles/.github/workflows/securite.yml@main
+    with:
+      pnpm: "12.8.1"

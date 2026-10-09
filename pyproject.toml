@@ -3,11 +3,12 @@ name = "init-repo"
 version = "0.1.0"
 description = "Génère un projet complet (charte, outillage, Django + Nuxt) et le tient à jour"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.14"
 dependencies = ["copier>=9.4,<10"]
 
 [project.scripts]
 init-repo = "init_repo.cli:main"
+charte = "init_repo.charte.charte:lancer"
 
 [build-system]
 requires = ["hatchling"]
@@ -21,13 +22,22 @@ testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py312"
+target-version = "py314"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "N", "UP", "B", "SIM", "RUF", "ANN"]
 
+[tool.ruff.lint.per-file-ignores]
+"src/init_repo/charte/*" = ["E501", "E741", "ANN", "B", "SIM", "RUF", "N", "UP"]
+
 [tool.mypy]
 strict = true
+
+# Moteur de charte repris des dotfiles : typage et longueur de ligne à reprendre, module par
+# module ([TYPAGE-STRICT], cliquet).
+[[tool.mypy.overrides]]
+module = ["init_repo.charte.*"]
+ignore_errors = true
 
 [[tool.mypy.overrides]]
 module = ["copier", "copier.*"]

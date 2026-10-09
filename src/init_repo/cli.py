@@ -23,7 +23,7 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _add_new_command(commands: "argparse._SubParsersAction[argparse.ArgumentParser]") -> None:
+def _add_new_command(commands: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     new_parser = commands.add_parser("nouveau", help="générer un nouveau projet complet")
     new_parser.add_argument("dossier", type=Path, help="dossier du projet à créer")
     new_parser.add_argument("--nom", help="nom court (par défaut : nom du dossier)")
@@ -31,6 +31,7 @@ def _add_new_command(commands: "argparse._SubParsersAction[argparse.ArgumentPars
     new_parser.add_argument("--description", help="une phrase sur le projet")
     new_parser.add_argument("--proprietaire", help="compte GitHub propriétaire")
     new_parser.add_argument("--equipe", help="logins GitHub séparés par des virgules")
+    new_parser.add_argument("--a-faire", help="suivre le travail dans docs/a-faire/ (boussole)")
     new_parser.add_argument("--github", action="store_true", help="créer et protéger le dépôt")
     new_parser.add_argument("--sans-installation", action="store_true", help="ne rien installer")
     new_parser.add_argument("--modele", help="source du modèle (chemin ou URL git)")
@@ -42,6 +43,8 @@ def _new_project_request(arguments: argparse.Namespace) -> nouveau.NewProjectReq
         answers["titre"] = arguments.titre
     if arguments.description:
         answers["description"] = arguments.description
+    if arguments.a_faire:
+        answers.update({"avec_a_faire": True, "boussole": arguments.a_faire})
     if arguments.proprietaire:
         answers["proprietaire"] = arguments.proprietaire
     if arguments.equipe:

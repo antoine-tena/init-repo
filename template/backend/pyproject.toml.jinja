@@ -6,6 +6,7 @@ dependencies = [
     "dj-database-url>=3.1.2",
     "django>=6.1.2",
     "django-ninja>=1.7.1",
+    "psycopg[binary]>=3.2,<4",
     "python-decouple>=3.8",
     "structlog>=26.1.0",
 ]
@@ -15,6 +16,7 @@ dev = [
     "django-stubs>=6.1.2",
     "mypy>=2.4.0",
     "pytest>=9.1.1",
+    "pytest-cov>=6.0",
     "pytest-django>=4.14.0",
     "ruff>=0.16.10",
 ]
@@ -45,3 +47,7 @@ python_files = ["test_*.py"]
 [[tool.mypy.overrides]]
 module = ["decouple"]
 ignore_missing_imports = true
+
+[tool.coverage.run]
+source = ["."]
+omit = ["manage.py", "*/migrations/*", "tests/*", "config/asgi.py", "config/wsgi.py"]

@@ -1,0 +1,53 @@
+# Règles impératives de CLAUDE.md vérifiées par la commande `charte` (installée avec init-repo) :
+# après chaque édition (hook Claude), avant chaque commit (pre-commit) et en CI.
+# Interdictions : respectées partout. Cliquets : le passif est un plafond qui ne fait que
+# baisser. Planchers : une valeur qui ne fait que monter. Valeurs : `charte --detail`.
+
+exclus = ["/migrations/"]
+regles_non_verifiees = "scripts/ci/charte-non-verifiee.txt"
+
+[interdictions.signaux-django]
+id = "SIGNAUX"
+
+[interdictions.journalisation]
+id = "JOURNALISATION"
+
+[interdictions.temps-constant]
+id = "TEMPS-CONSTANT"
+
+[interdictions.donnees-perso]
+id = "DONNEES-PERSO"
+
+[interdictions.migrations-django]
+id = "MIGRATIONS"
+branche = "main"
+
+[interdictions.style-vue]
+id = "STYLE-1"
+
+[cliquets.taille-fichier]
+id = "TAILLE-FICHIER"
+fichiers = ["backend/*.py", "backend/**/*.py", "frontend/app/**"]
+budget = 0
+
+[cliquets.routes-longues]
+id = "VUE-15"
+decorateur = '\s*@\w*(api|router)\.(get|post|put|patch|delete)'
+fichiers = ["backend/**/api.py", "backend/**/api/*.py"]
+budget = 0
+
+[cliquets.verrous-django]
+id = "VERROUS"
+budget = 0
+
+[types]
+dossier = "backend"
+paquets = ["config", "tests"]
+budget = 0
+env = { DJANGO_SECRET_KEY = "charte-types" }
+
+[couverture]
+rapport = "backend/coverage.xml"
+planchers = { TOTAL = 80 }
+# Le socle généré est couvert à 100 % : ne suggérer de relever le plancher qu'au-delà.
+marge = 20
