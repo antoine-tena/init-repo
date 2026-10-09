@@ -173,6 +173,7 @@ version = "0.2.0"
 source = { editable = "." }
 dependencies = [
     { name = "copier" },
+    { name = "packaging" },
 ]
 
 [package.dev-dependencies]
@@ -183,7 +184,10 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "copier", specifier = ">=9.4,<10" }]
+requires-dist = [
+    { name = "copier", specifier = ">=9.4,<10" },
+    { name = "packaging", specifier = ">=24" },
+]
 
 [package.metadata.requires-dev]
 dev = [
