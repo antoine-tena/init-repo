@@ -1,0 +1,61 @@
+# À faire
+
+Tout ce qu'il reste à faire sur {{ titre }}, en une seule liste rangée par criticité. Créée le
+**{{ date_creation }}**. Ce qui est fait est dans la section « ✅ Fait » en bas ; ce qui a été refusé est
+dans [ecarte.md](ecarte.md). **Rien d'autre n'est ouvert.**
+
+La boussole est **{{ boussole }}**.
+
+---
+
+## Mode d'emploi (humains et agents)
+
+**Une entrée** = un titre `### AF-NN · Titre`, puis trois lignes fixes, puis le détail :
+
+    ### AF-NN · Titre court qui dit ce qu'il faut obtenir
+    - **État** : à faire
+    - **Effort** : S · **Qui** : … · **Échéance** : —
+    - **Origine** : identifiant d'origine · audit `docs/_archive/<dossier>/README.md` l. 10-20
+
+    Pourquoi, ce qu'il faut faire (en liste à cocher `- [ ]` s'il y a plusieurs étapes), où regarder.
+
+- **Identifiant** `AF-NN` : stable, jamais réattribué, cité tel quel dans les commits et les
+  branches. **Prochain libre : AF-02.**
+- **L'état** prend une seule valeur parmi : `à faire` ; `en cours — branche <nom>, depuis le
+  JJ mois` ; `bloqué — attend <qui ou quoi>` ; `à vérifier — <où>`.
+- **Criticité** = la section où vit l'entrée ; en changer, c'est déplacer l'entrée.
+  🔴 critique (maintenant), 🟠 important (avant la boussole), 🟡 normal, ⚪ fond (chantiers
+  longs, dette).
+- **Effort** : XS (moins d'une heure), S (une demi-journée), M (un à deux jours), L (plus).
+- **Terminer une entrée** : la retirer de sa section et ajouter en tête du journal de la
+  section « ✅ Fait » une ligne `- **AAAA-MM-JJ** · AF-NN · Titre — ce qui a été fait (branche)`.
+- **Détail dans les audits archivés** : quand une entrée cite des lignes de `docs/_archive/`,
+  le constat d'origine y est en entier ; il est ancien, à vérifier dans le code actuel.
+- **Les emplacements cités sont des pistes, pas des adresses.**
+- Vue d'ensemble : `grep -E '^(## |### AF-|- \*\*État)' docs/a-faire/a-faire.md`.
+
+---
+
+## 🔴 Critique
+
+### AF-01 · Titre de l'entrée
+- **État** : à faire
+- **Effort** : S · **Qui** : — · **Échéance** : —
+- **Origine** : —
+
+Ce qu'il faut faire, pourquoi, où regarder.
+
+## 🟠 Important
+
+## 🟡 Normal
+
+## ⚪ Fond — chantiers longs et dette
+
+---
+
+## ✅ Fait
+
+### Journal
+
+Une ligne par entrée terminée, la plus récente en tête :
+`- **AAAA-MM-JJ** · AF-NN · Titre — ce qui a été fait (branche)`.
