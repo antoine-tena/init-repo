@@ -1,5 +1,7 @@
-# Modèle de projet d'kiln : les fichiers sont dans template/, seuls les `.jinja` sont
-# interprétés (les gabarits Vue gardent leurs `{{ }}`).
+# Modèle de projet de kiln : les fichiers sont dans template/, seuls les `.jinja` sont
+# interprétés (les gabarits Vue, React et Astro gardent leurs accolades). Un dossier nommé
+# `{% if … %}nom{% endif %}` n'est créé que si la condition tient : c'est ainsi que chaque
+# framework apporte ses fichiers, et que `kiln set` les retire quand on en change.
 _subdirectory: template
 _templates_suffix: .jinja
 _answers_file: .copier-answers.yml
@@ -30,6 +32,54 @@ equipe:
   type: yaml
   help: Logins GitHub de l'équipe (relecteurs), en liste YAML
   default: "[{{ proprietaire }}]"
+
+# Le type de projet ne sert qu'à conseiller : il précoche le backend et le frontend ci-dessous,
+# que l'on peut changer. Table des conseils : docs du README de kiln, « Conseil de stack ».
+type_projet:
+  type: str
+  help: Quel type de projet ? (sert à conseiller la stack)
+  choices:
+    Application complète (API et interface web): app
+    API seule: api
+    Site de contenu (vitrine, documentation, blog): site
+    Tableau de bord de données: tableau
+    Analyse de données (notebooks, figures): analyse
+  default: app
+
+backend:
+  type: str
+  help: >-
+    Backend (conseillé pour ce type :
+    {% if type_projet == 'app' %}Django{% elif type_projet == 'api' %}FastAPI{% elif type_projet in ['tableau', 'analyse'] %}Données Python{% else %}aucun{% endif %})
+  choices:
+    Django + Django Ninja (API complète, administration, ORM): django
+    FastAPI (API légère, asynchrone): fastapi
+    Données Python (polars, marimo, Plotly): data
+    Aucun: aucun
+  default: >-
+    {% if type_projet == 'app' %}django{% elif type_projet == 'api' %}fastapi{% elif type_projet in ['tableau', 'analyse'] %}data{% else %}aucun{% endif %}
+
+frontend:
+  type: str
+  help: >-
+    Frontend (conseillé pour ce type :
+    {% if type_projet == 'app' %}Nuxt{% elif type_projet == 'site' %}Astro{% elif type_projet == 'tableau' %}Streamlit{% else %}aucun{% endif %})
+  choices:
+    Nuxt + Vue (application web): nuxt
+    Next.js + React (application web): next
+    Astro (site de contenu, statique): astro
+    Streamlit (tableau de bord Python): streamlit
+    Dash (tableau de bord Python, interactif): dash
+    Aucun: aucun
+  default: >-
+    {% if type_projet == 'app' %}nuxt{% elif type_projet == 'site' %}astro{% elif type_projet == 'tableau' %}streamlit{% else %}aucun{% endif %}
+  validator: >-
+    {% if backend == 'aucun' and frontend == 'aucun' %}Il faut au moins un backend ou un frontend.{% endif %}
+
+podman:
+  type: bool
+  help: Conteneurs podman (Containerfile, compose.yaml, PostgreSQL) ? Activable plus tard par `kiln set podman=true`.
+  default: false
 
 avec_a_faire:
   type: bool
