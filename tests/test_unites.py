@@ -8,6 +8,7 @@ from kiln.rules import charter_rules, verified_rules
 from kiln.settings import parse_assignments
 from kiln.shell import KilnError
 from kiln.stack import Stack, stack_from_answers
+from kiln.update import replace_legacy_source
 
 
 def test_legacy_answers_mean_django_and_nuxt() -> None:
@@ -56,3 +57,12 @@ def test_rules_checked_by_charte_are_verified(tmp_path: Path) -> None:
     unverified = set(charter_rules(tmp_path)) - verified_rules(tmp_path, stack)
 
     assert unverified == {"NOMS-INTERDITS"}
+
+
+def test_legacy_template_source_is_replaced(tmp_path: Path) -> None:
+    answers = tmp_path / ".copier-answers.yml"
+    answers.write_text("_commit: abc\n_src_path: https://github.com/antoine-tena/init-repo.git\n")
+
+    replace_legacy_source(tmp_path)
+
+    assert "_src_path: https://github.com/antoine-tena/kiln.git" in answers.read_text()
