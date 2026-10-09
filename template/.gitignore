@@ -2,7 +2,7 @@
 .env
 .env.*
 !.env.example
-# Modèle de .env.example dans le dépôt init-repo.
+# Modèle de .env.example dans le dépôt kiln.
 !.env.example.jinja
 *.pem
 *.key
@@ -30,6 +30,9 @@ Thumbs.db
 __pycache__/
 *.py[cod]
 .venv/
+coverage.xml
+.coverage
+htmlcov/
 .mypy_cache/
 .ruff_cache/
 .pytest_cache/

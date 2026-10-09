@@ -11,7 +11,7 @@ import ast
 import re
 from collections import defaultdict
 
-from init_repo.charte.moteur import Depot, echec, hors_tests, justifie
+from kiln.charte.moteur import Depot, echec, hors_tests, justifie
 
 PY = ["backend/*.py", "backend/**/*.py"]
 

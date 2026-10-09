@@ -5,7 +5,7 @@ import subprocess
 from pathlib import Path
 
 
-class InitRepoError(Exception):
+class KilnError(Exception):
     """Erreur attendue, affichée sans trace à l'utilisateur."""
 
 
@@ -17,14 +17,14 @@ def run(command: list[str], cwd: Path, env: dict[str, str] | None = None) -> Non
     """Lance une commande en affichant sa sortie ; échoue si elle échoue."""
     completed = subprocess.run(command, cwd=cwd, env=env, check=False)
     if completed.returncode != 0:
-        raise InitRepoError(f"échec de `{' '.join(command)}` (code {completed.returncode})")
+        raise KilnError(f"échec de `{' '.join(command)}` (code {completed.returncode})")
 
 
 def capture(command: list[str], cwd: Path) -> str:
     """Lance une commande et renvoie sa sortie standard, sans espaces autour."""
     completed = subprocess.run(command, cwd=cwd, capture_output=True, text=True, check=False)
     if completed.returncode != 0:
-        raise InitRepoError(f"échec de `{' '.join(command)}` : {completed.stderr.strip()}")
+        raise KilnError(f"échec de `{' '.join(command)}` : {completed.stderr.strip()}")
     return completed.stdout.strip()
 
 
@@ -40,7 +40,7 @@ def require_tools(*tool_names: str) -> None:
     missing_tools = [name for name in tool_names if shutil.which(name) is None]
     if missing_tools:
         hints = "\n".join(f"  {name} : {INSTALL_HINTS.get(name, '')}" for name in missing_tools)
-        raise InitRepoError(f"outils manquants :\n{hints}")
+        raise KilnError(f"outils manquants :\n{hints}")
 
 
 def repo_root(start: Path) -> Path:

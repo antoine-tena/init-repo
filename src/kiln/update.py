@@ -1,12 +1,12 @@
-"""`init-repo maj` : rapporte les évolutions du modèle, puis met à jour les dépendances."""
+"""`kiln update` : rapporte les évolutions du modèle, puis met à jour les dépendances."""
 
 from pathlib import Path
 
 import copier
 
-from init_repo.modele import TEMPLATE_REVISION
-from init_repo.shell import InitRepoError, capture, require_tools, run, step
-from init_repo.verifier import verify
+from kiln.check import check_project
+from kiln.shell import KilnError, capture, require_tools, run, step
+from kiln.template import TEMPLATE_REVISION
 
 PROTECTED_BRANCHES = ("main", "develop")
 
@@ -32,19 +32,17 @@ def update_project(root: Path, *, should_update_template: bool, should_update_de
     step("Fichiers modifiés")
     run(["git", "status", "--short"], root)
     print("\nRelire le diff (conflits marqués <<<<<<<), puis commiter et ouvrir une PR.")
-    verify(root)
+    check_project(root)
 
 
 def _check_working_branch(root: Path) -> None:
     if not (root / ".copier-answers.yml").exists():
-        raise InitRepoError(
-            "pas de .copier-answers.yml : ce dépôt n'a pas été généré par init-repo"
-        )
+        raise KilnError("pas de .copier-answers.yml : ce dépôt n'a pas été généré par kiln")
     branch = capture(["git", "branch", "--show-current"], root)
     if branch in PROTECTED_BRANCHES:
-        raise InitRepoError(f"sur {branch} : créer d'abord une branche (ex. chore/maj-init-repo)")
+        raise KilnError(f"sur {branch} : créer d'abord une branche (ex. chore/kiln-update)")
     if capture(["git", "status", "--porcelain"], root):
-        raise InitRepoError("arbre non propre : commiter ou mettre de côté les modifications")
+        raise KilnError("arbre non propre : commiter ou mettre de côté les modifications")
 
 
 def _sync_lockfiles(root: Path) -> None:

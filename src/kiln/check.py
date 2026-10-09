@@ -1,9 +1,9 @@
-"""`init-repo verifier` : rejoue les contrôles du backend et du frontend, sans s'arrêter."""
+"""`kiln check` : rejoue les contrôles du backend et du frontend, sans s'arrêter."""
 
 import subprocess
 from pathlib import Path
 
-from init_repo.shell import InitRepoError, step
+from kiln.shell import KilnError, step
 
 CHECKS: tuple[tuple[str, str, list[str]], ...] = (
     ("backend", "ruff", ["uv", "run", "ruff", "check", "."]),
@@ -13,7 +13,7 @@ CHECKS: tuple[tuple[str, str, list[str]], ...] = (
 )
 
 
-def verify(root: Path) -> None:
+def check_project(root: Path) -> None:
     """Lance chaque contrôle, puis échoue en listant ceux qui ont échoué."""
     failed_checks: list[str] = []
     for folder, label, command in CHECKS:
@@ -22,5 +22,5 @@ def verify(root: Path) -> None:
         if completed.returncode != 0:
             failed_checks.append(f"{folder} {label}")
     if failed_checks:
-        raise InitRepoError(f"contrôles en échec : {', '.join(failed_checks)}")
+        raise KilnError(f"contrôles en échec : {', '.join(failed_checks)}")
     print("\nTous les contrôles passent.")

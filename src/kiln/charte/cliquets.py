@@ -9,7 +9,7 @@ from __future__ import annotations
 import ast
 import re
 
-from init_repo.charte.moteur import Depot, hors_tests
+from kiln.charte.moteur import Depot, hors_tests
 
 
 def taille_fichier(depot: Depot, p: dict) -> tuple[int, list[str]]:

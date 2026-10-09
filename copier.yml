@@ -1,4 +1,4 @@
-# Modèle de projet d'init-repo : les fichiers sont dans template/, seuls les `.jinja` sont
+# Modèle de projet d'kiln : les fichiers sont dans template/, seuls les `.jinja` sont
 # interprétés (les gabarits Vue gardent leurs `{{ }}`).
 _subdirectory: template
 _templates_suffix: .jinja

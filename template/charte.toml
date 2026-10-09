@@ -1,4 +1,4 @@
-# Règles impératives de CLAUDE.md vérifiées par la commande `charte` (installée avec init-repo) :
+# Règles impératives de CLAUDE.md vérifiées par la commande `charte` (installée avec kiln) :
 # après chaque édition (hook Claude), avant chaque commit (pre-commit) et en CI.
 # Interdictions : respectées partout. Cliquets : le passif est un plafond qui ne fait que
 # baisser. Planchers : une valeur qui ne fait que monter. Valeurs : `charte --detail`.
@@ -50,4 +50,4 @@ env = { DJANGO_SECRET_KEY = "charte-types" }
 rapport = "backend/coverage.xml"
 planchers = { TOTAL = 80 }
 # Le socle généré est couvert à 100 % : ne suggérer de relever le plancher qu'au-delà.
-marge = 20
+marge = 25

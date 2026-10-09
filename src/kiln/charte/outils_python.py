@@ -8,7 +8,7 @@ import subprocess
 import sys
 import xml.etree.ElementTree as ET
 
-from init_repo.charte.moteur import Depot
+from kiln.charte.moteur import Depot
 
 
 def types(depot: Depot) -> int:
