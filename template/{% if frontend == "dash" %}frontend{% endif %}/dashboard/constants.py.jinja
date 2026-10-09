@@ -1,0 +1,17 @@
+{% from "macros.jinja" import py_str -%}
+"""[ZERO-MAGIE] : textes, identifiants de composants et réglages, nommés une seule fois."""
+
+SITE_TITLE = {{ py_str(titre) }}
+SITE_DESCRIPTION = {{ py_str(description) }}
+{%- if backend == 'data' %}
+
+# [IDS] : identifiants des composants reliés par les callbacks.
+CATEGORY_DROPDOWN_ID = "category-dropdown"
+TOTALS_GRAPH_ID = "totals-graph"
+ALL_CATEGORIES = "toutes"
+{%- elif backend in ['django', 'fastapi'] %}
+
+API_URL_VARIABLE = "API_URL"
+DEFAULT_API_URL = "http://localhost:8000"
+HEALTH_TIMEOUT_SECONDS = 2.0
+{%- endif %}

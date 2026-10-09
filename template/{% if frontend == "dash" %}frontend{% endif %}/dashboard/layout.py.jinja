@@ -1,0 +1,78 @@
+"""Mise en page : une fonction qui construit l'application, évaluée au démarrage."""
+
+{% if backend == 'data' -%}
+from dash import Dash, dcc, html
+from pipeline.sources import load_measurements
+from pipeline.transforms import monthly_totals
+
+from dashboard import callbacks
+from dashboard.constants import (
+    ALL_CATEGORIES,
+    CATEGORY_DROPDOWN_ID,
+    SITE_DESCRIPTION,
+    SITE_TITLE,
+    TOTALS_GRAPH_ID,
+)
+
+
+def build_layout() -> html.Main:
+    categories = monthly_totals(load_measurements())["category"].unique(maintain_order=True)
+    return html.Main(
+        [
+            html.H1(SITE_TITLE),
+            html.P(SITE_DESCRIPTION),
+            html.Label("Catégorie", htmlFor=CATEGORY_DROPDOWN_ID),
+            dcc.Dropdown(
+                id=CATEGORY_DROPDOWN_ID,
+                options=[ALL_CATEGORIES, *categories.to_list()],
+                value=ALL_CATEGORIES,
+                clearable=False,
+            ),
+            dcc.Loading(dcc.Graph(id=TOTALS_GRAPH_ID)),
+        ]
+    )
+
+
+def create_app() -> Dash:
+    app = Dash(__name__, title=SITE_TITLE)
+    app.layout = build_layout
+    callbacks.register()
+    return app
+{%- elif backend in ['django', 'fastapi'] -%}
+from dash import Dash, html
+
+from dashboard.api import fetch_health_status
+from dashboard.constants import SITE_DESCRIPTION, SITE_TITLE
+
+
+def health_message() -> str:
+    health_status = fetch_health_status()
+    if health_status is None:
+        return "Le backend ne répond pas : lancez-le avec kiln dev."
+    return f"Backend joignable (statut : {health_status})."
+
+
+def build_layout() -> html.Main:
+    # Évaluée à chaque chargement de page : l'état de l'API est toujours frais.
+    return html.Main([html.H1(SITE_TITLE), html.P(SITE_DESCRIPTION), html.P(health_message())])
+
+
+def create_app() -> Dash:
+    app = Dash(__name__, title=SITE_TITLE)
+    app.layout = build_layout
+    return app
+{%- else -%}
+from dash import Dash, html
+
+from dashboard.constants import SITE_DESCRIPTION, SITE_TITLE
+
+
+def build_layout() -> html.Main:
+    return html.Main([html.H1(SITE_TITLE), html.P(SITE_DESCRIPTION)])
+
+
+def create_app() -> Dash:
+    app = Dash(__name__, title=SITE_TITLE)
+    app.layout = build_layout
+    return app
+{%- endif %}
