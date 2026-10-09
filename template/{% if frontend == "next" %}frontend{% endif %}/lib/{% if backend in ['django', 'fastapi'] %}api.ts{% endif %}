@@ -1,0 +1,32 @@
+// [APPELS-API] : seul point d'appel du backend ; les composants passent par ces fonctions.
+const DEFAULT_BACKEND_URL = "http://localhost:8000";
+const backendUrl = process.env.BACKEND_URL ?? DEFAULT_BACKEND_URL;
+
+export interface HealthPayload {
+  status: string;
+}
+
+// [VALIDATION-AUX-FRONTIERES] : la réponse est vérifiée avant usage.
+function isHealthPayload(payload: unknown): payload is HealthPayload {
+  return (
+    typeof payload === "object" &&
+    payload !== null &&
+    "status" in payload &&
+    typeof payload.status === "string"
+  );
+}
+
+export async function getHealth(): Promise<HealthPayload | null> {
+  try {
+    const response = await fetch(`${backendUrl}/api/health`, { cache: "no-store" });
+    if (!response.ok) {
+      return null;
+    }
+    const payload: unknown = await response.json();
+    return isHealthPayload(payload) ? payload : null;
+  } catch (error) {
+    // [EXCEPTIONS] : backend injoignable, affiché comme tel par l'appelant.
+    console.error("health.unreachable", error);
+    return null;
+  }
+}
