@@ -1,0 +1,21 @@
+"""Point d'entrée de l'API Django Ninja ([NINJA])."""
+
+from ninja import NinjaAPI, Router, Schema
+
+HEALTH_STATUS_OK = "ok"
+
+api = NinjaAPI(title="{{ titre }} API", version="1.0.0")
+health_router = Router(tags=["health"])
+
+
+class HealthResponse(Schema):
+    status: str
+
+
+# [PERMISSIONS] : route publique, sans donnée, utilisée comme sonde de vivacité ([SANTE]).
+@health_router.get("/health", response=HealthResponse, auth=None)
+def get_health(request: object) -> HealthResponse:
+    return HealthResponse(status=HEALTH_STATUS_OK)
+
+
+api.add_router("/", health_router)
