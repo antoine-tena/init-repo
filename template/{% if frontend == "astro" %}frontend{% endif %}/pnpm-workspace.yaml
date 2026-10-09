@@ -1,0 +1,8 @@
+# Scripts d'installation des dépendances : refusés, les binaires précompilés suffisent.
+allowBuilds:
+  '@tailwindcss/oxide': false
+  esbuild: false
+  sharp: false
+
+# Versions exactes dans package.json, y compris après `kiln update` ([DEPENDANCES-FIGEES]).
+saveExact: true
