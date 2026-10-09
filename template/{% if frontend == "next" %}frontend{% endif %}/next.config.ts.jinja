@@ -1,0 +1,26 @@
+import type { NextConfig } from "next";
+{%- if backend in ['django', 'fastapi'] %}
+
+// Origine du backend en développement, cible du relais '/api/*' ci-dessous.
+const DEFAULT_BACKEND_ORIGIN = "http://localhost:8000";
+const backendOrigin = process.env.BACKEND_URL ?? DEFAULT_BACKEND_ORIGIN;
+{%- endif %}
+
+const nextConfig: NextConfig = {
+  cacheComponents: true,
+  turbopack: {
+    rules: {
+      "*.css": {
+        loaders: ["@tailwindcss/turbopack"],
+        as: "*.css",
+      },
+    },
+  },
+{%- if backend in ['django', 'fastapi'] %}
+  async rewrites() {
+    return [{ source: "/api/:path*", destination: `${backendOrigin}/api/:path*` }];
+  },
+{%- endif %}
+};
+
+export default nextConfig;
