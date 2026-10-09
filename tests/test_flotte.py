@@ -1,7 +1,7 @@
 import subprocess
 from pathlib import Path
 
-from kiln.fleet import MAX_FILES_PER_COMMIT, commit_in_batches, find_repos
+from kiln.fleet import MAX_FILES_PER_COMMIT, commit_in_batches, conflicted_files, find_repos
 
 
 def make_repo(root: Path, source: str) -> Path:
@@ -46,3 +46,14 @@ def test_commits_hold_at_most_ten_files(tmp_path: Path) -> None:
     ]
     # Les treize fichiers et le fichier de réponses : dix, puis quatre.
     assert sorted(sizes) == [4, 10]
+
+
+def test_conflicts_left_by_copier_are_found(tmp_path: Path) -> None:
+    repo = make_repo(tmp_path / "projet", "https://github.com/antoine-tena/kiln.git")
+    (repo / "README.md").write_text(
+        "<<<<<<< before updating\nancien\n=======\nnouveau\n>>>>>>> after\n"
+    )
+
+    assert conflicted_files(repo) == ["README.md"]
+    (repo / "README.md").write_text("nouveau\n")
+    assert conflicted_files(repo) == []
