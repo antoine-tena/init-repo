@@ -266,6 +266,43 @@ def compose_profils(depot: Depot, p: dict) -> list[str]:
     return [echec(p.get("id", "COMPOSE"), message, fautifs)] if fautifs else []
 
 
+OUTILS_INTERDITS = (
+    (re.compile(r"\bpip3?\s+install\b|\bpython3?\s+-m\s+pip\b|\bpipx\s+install\b"), "pip : uv"),
+    (
+        re.compile(r"\bdocker(?:-compose)?\s+(?:build|run|compose|pull|push|exec|up|save|load)\b"),
+        "docker : podman",
+    ),
+)
+NOMS_INTERDITS = re.compile(
+    r"^(?:requirements[\w.-]*\.txt|Dockerfile[\w.-]*|docker-compose[\w.-]*\.ya?ml)$"
+)
+SANS_COMMANDES = (".md", ".lock", ".svg", ".png", ".jpg", ".ico", ".csv")
+
+
+def outils_interdits(depot: Depot, p: dict) -> list[str]:
+    """uv pour Python et podman pour les conteneurs, jamais pip ni docker : ni commande
+    (`pip install`, `docker build`…) hors de la documentation, ni fichier (`requirements.txt`,
+    `Dockerfile`, `docker-compose.yml`). Exception justifiée par « # Outil interdit : <raison> »."""
+    fautifs = []
+    for f in depot.suivis([], exclus=False):
+        rel = depot.rel(f)
+        if NOMS_INTERDITS.match(f.name):
+            fautifs.append(f"{rel}  (fichier)")
+            continue
+        if f.suffix in SANS_COMMANDES or f.name.endswith("-lock.yaml") or depot.engendre(f):
+            continue
+        try:
+            lignes = f.read_text("utf-8").splitlines()
+        except UnicodeDecodeError:
+            continue
+        for numero, ligne in enumerate(lignes, start=1):
+            for motif, conseil in OUTILS_INTERDITS:
+                if motif.search(ligne) and not justifie(lignes, numero, "Outil interdit"):
+                    fautifs.append(f"{rel}:{numero}  {conseil}  {ligne.strip()[:80]}")
+    message = p.get("message", "uv et podman partout : jamais pip ni docker")
+    return [echec(p.get("id", "UV-PODMAN"), message, fautifs)] if fautifs else []
+
+
 REGLES = {
     "signaux-django": signaux_django,
     "journalisation": journalisation,
@@ -277,4 +314,5 @@ REGLES = {
     "fichiers-interdits": fichiers_interdits,
     "copies": copies,
     "compose-profils": compose_profils,
+    "outils-interdits": outils_interdits,
 }

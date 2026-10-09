@@ -36,6 +36,9 @@ branche = "main"
 id = "STYLE-1"
 {%- endif %}
 
+[interdictions.outils-interdits]
+id = "UV-PODMAN"
+
 [cliquets.taille-fichier]
 id = "TAILLE-FICHIER"
 fichiers = {{ (python_files + front_files) | tojson }}

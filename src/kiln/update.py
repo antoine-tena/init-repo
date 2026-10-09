@@ -16,7 +16,12 @@ PROTECTED_BRANCHES = ("main", "develop")
 
 
 def update_project(
-    root: Path, *, should_update_template: bool, should_update_deps: bool, allow_major: bool
+    root: Path,
+    *,
+    should_update_template: bool,
+    should_update_deps: bool,
+    allow_major: bool,
+    should_check: bool = True,
 ) -> None:
     require_tools("git", "uv")
     check_working_branch(root)
@@ -31,7 +36,8 @@ def update_project(
         sync_dependencies(root, stack)
     write_unverified_rules(root, stack)
     report_changes(root)
-    check_project(root)
+    if should_check:
+        check_project(root)
 
 
 def apply_template(root: Path, answers: Mapping[str, object] | None = None) -> None:
