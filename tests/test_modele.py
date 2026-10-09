@@ -55,3 +55,27 @@ def test_vue_templates_keep_their_mustaches(tmp_path: Path) -> None:
 
     health_component = (project_dir / "frontend/app/components/HealthStatus.vue").read_text()
     assert "{{ health?.status }}" in health_component
+
+
+def test_charter_tooling_is_generated(tmp_path: Path) -> None:
+    project_dir = generate(tmp_path / "demo")
+
+    for name in ("charte.toml", "scripts/ci/charte-non-verifiee.txt", ".github/workflows/ci.yml"):
+        assert (project_dir / name).is_file(), name
+    assert not (project_dir / "docs").exists()
+
+
+def test_a_faire_is_optional(tmp_path: Path) -> None:
+    project_dir = tmp_path / "demo"
+    copier.run_copy(
+        str(TEMPLATE_DIR),
+        project_dir,
+        data={**ANSWERS, "avec_a_faire": True, "boussole": "la démo en ligne"},
+        defaults=True,
+        vcs_ref="HEAD",
+        quiet=True,
+    )
+
+    a_faire = (project_dir / "docs/a-faire/a-faire.md").read_text()
+    assert "La boussole est **la démo en ligne**." in a_faire
+    assert "docs/a-faire/" in (project_dir / "CLAUDE.md").read_text()
