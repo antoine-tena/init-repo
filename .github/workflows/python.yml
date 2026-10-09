@@ -1,8 +1,9 @@
 name: Python
 
 # Qualité d'un projet Python géré par uv, quel que soit son framework (FastAPI, données,
-# Streamlit, Dash) : ruff, typage mypy en cliquet (`charte types`), pytest avec couverture,
-# planchers de couverture (`charte couverture`). PostgreSQL lancé par podman au besoin.
+# Streamlit, Dash) : ruff, mypy (configuration stricte du pyproject.toml), pytest avec un plancher
+# de couverture. PostgreSQL lancé par podman au besoin. Un dépôt peut en appeler plusieurs, un par
+# dossier (backend Python et frontend Streamlit, par exemple).
 on:
   workflow_call:
     inputs:
@@ -22,20 +23,19 @@ on:
         type: string
         default: ""
       mypy:
-        description: Lancer `charte types` (section [types] de charte.toml)
+        description: Lancer mypy dans le dossier
         type: boolean
         default: true
-      couverture:
-        description: Lancer `charte couverture` (section [couverture] de charte.toml)
-        type: boolean
-        default: true
+      plancher:
+        description: Couverture minimale des lignes, en pour cent (0 = pas de plancher)
+        type: number
+        default: 80
 
 jobs:
   python:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: antoine-tena/kiln/actions/charte@main
 
       - uses: antoine-tena/kiln/actions/services@main
         if: inputs.postgres != ''
@@ -64,12 +64,15 @@ jobs:
           uv run ruff format --check .
         working-directory: ./${{ inputs.dossier }}
 
-      - name: Typage (mypy, en cliquet)
+      - name: mypy
         if: inputs.mypy
-        run: charte types
+        run: uv run mypy .
+        working-directory: ./${{ inputs.dossier }}
 
       - name: pytest
-        run: uv run pytest --cov --cov-branch --cov-report=xml --cov-report=term:skip-covered
+        run: >-
+          uv run pytest --cov --cov-branch --cov-report=xml --cov-report=term:skip-covered
+          --cov-fail-under=${{ inputs.plancher }}
         working-directory: ./${{ inputs.dossier }}
 
       - name: Publier la couverture
@@ -79,7 +82,3 @@ jobs:
           name: ${{ inputs.dossier }}-coverage
           path: ${{ inputs.dossier }}/coverage.xml
           if-no-files-found: ignore
-
-      - name: Planchers de couverture
-        if: inputs.couverture
-        run: charte couverture
