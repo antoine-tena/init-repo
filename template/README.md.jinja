@@ -18,21 +18,21 @@
 - `.vscode/` : réglages et extensions recommandées, partagés par toute l'équipe.
 
 Le projet est généré et tenu à jour par
-[init-repo](https://github.com/antoine-tena/init-repo) (réponses dans `.copier-answers.yml`).
+[kiln](https://github.com/antoine-tena/kiln) (réponses dans `.copier-answers.yml`).
 
 ## Installation
 
 Prérequis : [uv](https://docs.astral.sh/uv/), [pnpm](https://pnpm.io/) (avec Node 24) et
-l'outil init-repo, installé une fois par poste :
+l'outil kiln, installé une fois par poste :
 
 ```sh
-uv tool install git+https://github.com/antoine-tena/init-repo
+uv tool install git+https://github.com/antoine-tena/kiln
 ```
 
 Puis, après le clone, depuis la racine du dépôt :
 
 ```sh
-init-repo installer
+kiln install
 ```
 
 La commande installe les dépendances du backend et du frontend, crée `backend/.env` avec une
@@ -42,7 +42,7 @@ dont le refus de commiter sur `main` ou `develop`). On peut la relancer sans ris
 ## Lancer le projet
 
 ```sh
-init-repo dev
+kiln dev
 ```
 
 - Frontend : http://localhost:3000 (les appels `/api` sont relayés vers le backend).
@@ -53,7 +53,7 @@ init-repo dev
 Sur une branche dédiée (`chore/maj-…`), avec un arbre propre :
 
 ```sh
-init-repo maj
+kiln update
 ```
 
 Elle rapporte les évolutions du modèle (charte, outillage, configuration) sans écraser les

@@ -1,10 +1,10 @@
 # Garde-fous et contrôles de la CI rejoués avant chaque commit.
 #
 # Installation, une fois, à la racine du dépôt :
-#   init-repo installer       (ou : uv tool install pre-commit && pre-commit install)
+#   kiln install       (ou : uv tool install pre-commit && pre-commit install)
 # Le crochet vaut pour l'arbre principal et tous les worktrees. Tout rejouer :
 #   pre-commit run --all-files
-# Les crochets locaux appellent les outils du projet (uv) et `charte`, installée avec init-repo.
+# Les crochets locaux appellent les outils du projet (uv) et `charte`, installée avec kiln.
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
