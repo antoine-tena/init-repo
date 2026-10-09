@@ -1,0 +1,90 @@
+name: Tests par mutation
+
+# mutmut sur un backend Django géré par uv, PostgreSQL et Redis lancés par podman (configuration [tool.mutmut] du pyproject.toml) : un
+# mutant qui survit est un test manquant. Jamais bloquant : le job réussit quel que soit le score
+# et publie le rapport (statistiques, survivants et leur diff) en artefact.
+on:
+  workflow_call:
+    inputs:
+      dossier:
+        type: string
+        default: backend
+      base:
+        type: string
+        default: app
+      postgres:
+        type: string
+        default: docker.io/library/postgres:16-alpine
+      groupe:
+        description: Groupe de dépendances uv qui apporte mutmut
+        type: string
+        default: mutation
+      env:
+        description: Variables du projet, une par ligne (CLE=valeur)
+        type: string
+        default: ""
+
+jobs:
+  mutmut:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    continue-on-error: true
+    defaults:
+      run:
+        working-directory: ./${{ inputs.dossier }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: antoine-tena/kiln/actions/services@main
+        with:
+          base: ${{ inputs.base }}
+          postgres: ${{ inputs.postgres }}
+          redis: docker.io/library/redis:7-alpine
+
+      - name: Variables du projet
+        if: inputs.env != ''
+        env:
+          VARIABLES: ${{ inputs.env }}
+        run: printf '%s\n' "$VARIABLES" | grep -v '^\s*$' >> "$GITHUB_ENV"
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          package-directory: ./${{ inputs.dossier }}
+
+      - name: Dépendances
+        run: uv sync --locked --group ${{ inputs.groupe }}
+
+      # --max-children 1 : chaque mutant relance pytest sur la même base de test (--reuse-db).
+      - name: mutmut
+        run: uv run mutmut run --max-children 1 || echo "::warning::mutmut s'est arrêté avant la fin"
+
+      - name: Rapport
+        if: always()
+        run: |
+          mkdir -p ../mutation-report
+          uv run mutmut export-cicd-stats || true
+          cp mutants/mutmut-cicd-stats.json ../mutation-report/ 2>/dev/null || true
+          uv run mutmut results --all true > ../mutation-report/mutants.txt 2>&1 || true
+          grep -E ': (survived|no tests|timeout|suspicious)$' ../mutation-report/mutants.txt \
+            > ../mutation-report/survivants.txt || true
+          while read -r name _; do
+            uv run mutmut show "${name%:}" >> ../mutation-report/survivants.diff 2>&1 || true
+          done < ../mutation-report/survivants.txt
+          {
+            echo "## Tests par mutation"
+            echo
+            echo '```json'
+            cat ../mutation-report/mutmut-cicd-stats.json 2>/dev/null || echo "{}"
+            echo '```'
+            echo
+            echo "Survivants : $(wc -l < ../mutation-report/survivants.txt)"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publier le rapport
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: mutation-report
+          path: mutation-report/
+          retention-days: 90

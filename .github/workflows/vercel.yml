@@ -1,0 +1,44 @@
+name: Vercel
+
+# Déploiement du front en production : build sur le runner puis envoi du seul résultat
+# (--prebuilt), si bien qu'aucun fichier hors du projet Vercel ne peut partir.
+# Secrets VERCEL_TOKEN, VERCEL_ORG_ID et VERCEL_PROJECT_ID : ceux de l'environnement GitHub
+# `environnement`, que le job lit directement (un appelant ne peut pas transmettre des secrets
+# d'environnement), ou ceux du repo transmis par `secrets: inherit`.
+on:
+  workflow_call:
+    inputs:
+      front:
+        description: Dossier du front (pour la version de Node, .nvmrc)
+        type: string
+        default: frontend
+      environnement:
+        description: Environnement GitHub soumis à approbation
+        type: string
+        default: production
+
+jobs:
+  vercel:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environnement }}
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: ${{ inputs.front }}/package.json
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: ${{ inputs.front }}/.nvmrc
+
+      - name: Construire et déployer sur Vercel
+        run: |
+          pnpm dlx vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+          pnpm dlx vercel build --prod --token="$VERCEL_TOKEN"
+          url="$(pnpm dlx vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN")"
+          echo "Front déployé : $url (\`$GITHUB_SHA\`)" >> "$GITHUB_STEP_SUMMARY"

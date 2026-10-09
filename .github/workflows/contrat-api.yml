@@ -1,0 +1,72 @@
+name: Contrat d'API
+
+# Le front appelle l'API par un client typé depuis openapi.json : ce job régénère le schéma depuis
+# le code Django (django-ninja) puis les types depuis le schéma, et échoue si l'un des fichiers
+# commités a dérivé. Les fichiers engendrés sont ceux de .gitattributes (linguist-generated).
+on:
+  workflow_call:
+    inputs:
+      back:
+        type: string
+        default: backend
+      front:
+        type: string
+        default: frontend
+      export:
+        type: string
+        default: uv run python manage.py export_openapi --check --output ../openapi.json
+      generation:
+        type: string
+        default: pnpm generate:api
+      env:
+        description: Variables du projet, une par ligne (CLE=valeur)
+        type: string
+        default: ""
+
+jobs:
+  contrat:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Variables du projet
+        if: inputs.env != ''
+        env:
+          VARIABLES: ${{ inputs.env }}
+        run: printf '%s\n' "$VARIABLES" | grep -v '^\s*$' >> "$GITHUB_ENV"
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          package-directory: ./${{ inputs.back }}
+
+      - name: Dépendances du back
+        run: uv sync --locked
+        working-directory: ./${{ inputs.back }}
+
+      - name: openapi.json correspond au code
+        run: ${{ inputs.export }}
+        working-directory: ./${{ inputs.back }}
+
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: ${{ inputs.front }}/package.json
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: ${{ inputs.front }}/.nvmrc
+          cache: pnpm
+          cache-dependency-path: ${{ inputs.front }}/pnpm-lock.yaml
+
+      - name: Dépendances du front
+        run: pnpm install --frozen-lockfile
+        working-directory: ./${{ inputs.front }}
+
+      - name: Types et règles de saisie conformes au schéma
+        env:
+          GENERATION: ${{ inputs.generation }}
+        run: |
+          $GENERATION
+          git diff --exit-code -- ':(top,attr:linguist-generated=true)' \
+            || (echo "::error::Les fichiers engendrés ont dérivé du schéma. Lancer '$GENERATION'." && exit 1)
+        working-directory: ./${{ inputs.front }}

@@ -1,0 +1,51 @@
+name: SBOM
+
+# Nomenclature CycloneDX du back (environnement figé par uv.lock) et du front (pnpm-lock.yaml),
+# conservée 90 jours en artefact. Informatif : n'échoue jamais.
+on:
+  workflow_call:
+    inputs:
+      back:
+        type: string
+        default: backend
+      front:
+        type: string
+        default: frontend
+
+jobs:
+  sbom:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v7
+        if: inputs.back != ''
+        with:
+          enable-cache: true
+          package-directory: ./${{ inputs.back }}
+
+      - name: SBOM du back
+        if: inputs.back != ''
+        run: |
+          uv sync --locked --no-dev
+          uv run --no-sync --with cyclonedx-bom cyclonedx-py environment .venv \
+            --of JSON -o ../sbom-backend.cdx.json
+        working-directory: ./${{ inputs.back }}
+
+      - uses: actions/setup-node@v7
+        if: inputs.front != ''
+        with:
+          node-version-file: ${{ inputs.front }}/.nvmrc
+
+      - name: SBOM du front
+        if: inputs.front != ''
+        run: npx --yes @cyclonedx/cdxgen@11 -t pnpm --required-only -o ../sbom-frontend.cdx.json .
+        working-directory: ./${{ inputs.front }}
+
+      - name: Conserver les SBOM
+        uses: actions/upload-artifact@v7
+        with:
+          name: sbom-${{ github.sha }}
+          path: sbom-*.cdx.json
+          retention-days: 90
