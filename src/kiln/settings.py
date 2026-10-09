@@ -15,6 +15,7 @@ from kiln.deps import lock_dependencies, sync_dependencies
 from kiln.rules import write_unverified_rules
 from kiln.shell import KilnError, require_tools, step
 from kiln.stack import BACKEND_DIR, BUILD_ARTIFACTS, FRONTEND_DIR, Stack, load_stack, read_answers
+from kiln.statusline import apply_statusline_settings
 from kiln.update import apply_template, check_working_branch, report_changes
 
 SETTABLE_KEYS = (
@@ -27,8 +28,9 @@ SETTABLE_KEYS = (
     "backend",
     "frontend",
     "podman",
-    "avec_a_faire",
     "boussole",
+    "statusline_ci",
+    "url_sante_prod",
 )
 LIST_KEYS = frozenset({"equipe"})
 
@@ -67,6 +69,7 @@ def apply_settings(root: Path, assignments: list[str]) -> None:
     apply_template(root, changes)
     stack = load_stack(root)
     remove_replaced_artifacts(root, previous_stack, stack)
+    apply_statusline_settings(root)
     if stack.pnpm_dir is not None:
         require_tools("pnpm")
     lock_dependencies(root, stack)

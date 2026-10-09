@@ -9,6 +9,7 @@ from pathlib import Path
 from kiln.config import UserConfig, ensure_system, load_config
 from kiln.shell import KilnError, require_tools, run, step
 from kiln.stack import BACKEND_DIR, Stack, load_stack
+from kiln.statusline import apply_statusline_settings
 
 SECRET_KEY_VARIABLE = "DJANGO_SECRET_KEY"
 SECRET_KEY_BYTES = 50
@@ -48,8 +49,9 @@ def install_project(root: Path) -> None:
     if stack.pnpm_dir is not None:
         step(f"{stack.pnpm_dir} : dépendances pnpm")
         run(["pnpm", "install", "--frozen-lockfile"], root / stack.pnpm_dir)
-    step("Garde-fous git (pre-commit)")
+    step("Garde-fous git (pre-commit) et status line")
     run(["pre-commit", "install"], root)
+    apply_statusline_settings(root)
     print("\nPrêt. Lancer le projet : kiln dev")
 
 

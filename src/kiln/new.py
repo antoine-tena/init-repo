@@ -13,6 +13,7 @@ from kiln.deps import lock_dependencies
 from kiln.rules import write_unverified_rules
 from kiln.shell import KilnError, require_tools, run, step
 from kiln.stack import load_stack, read_answers
+from kiln.statusline import apply_statusline_settings
 from kiln.template import TEMPLATE_REVISION, template_source
 
 INITIAL_COMMIT_MESSAGE = "chore: projet généré par kiln"
@@ -47,6 +48,7 @@ def create_project(request: NewProjectRequest) -> None:
     if stack.pnpm_dir is not None:
         require_tools("pnpm")
     run(["git", "init", "-q", "-b", "main"], root)
+    apply_statusline_settings(root)
     lock_dependencies(root, stack)
     write_unverified_rules(root, stack)
     if request.should_install:
