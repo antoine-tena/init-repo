@@ -1,0 +1,83 @@
+name: pnpm
+
+# Qualité d'un front pnpm (Nuxt, Next.js, Astro…) : les scripts de package.json listés dans
+# `scripts`, l'un après l'autre (lint, typecheck, tests, build…), puis les rapports publiés en
+# artefact. La version de pnpm est celle du champ packageManager de package.json.
+on:
+  workflow_call:
+    inputs:
+      dossier:
+        type: string
+        default: frontend
+      pnpm:
+        description: Version de pnpm (vide = champ packageManager de package.json)
+        type: string
+        default: ""
+      scripts:
+        description: Scripts pnpm à lancer dans l'ordre, un par ligne (avec leurs arguments)
+        type: string
+        default: |
+          lint
+          typecheck
+          test
+          build
+      rapports:
+        description: Chemins publiés en artefact, relatifs au dossier, un par ligne
+        type: string
+        default: ""
+
+jobs:
+  pnpm:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./${{ inputs.dossier }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: ${{ inputs.pnpm }}
+          package_json_file: ${{ inputs.dossier }}/package.json
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: ${{ inputs.dossier }}/.nvmrc
+          cache: pnpm
+          cache-dependency-path: ${{ inputs.dossier }}/pnpm-lock.yaml
+
+      - name: Dépendances
+        run: pnpm install --frozen-lockfile
+
+      - name: Scripts
+        env:
+          SCRIPTS: ${{ inputs.scripts }}
+        run: |
+          while read -r script; do
+            [ -n "$script" ] || continue
+            echo "::group::pnpm $script"
+            # shellcheck disable=SC2086 # le script porte ses arguments
+            pnpm $script
+            echo "::endgroup::"
+          done <<< "$SCRIPTS"
+
+      - name: Chemins des rapports
+        id: rapports
+        if: always() && inputs.rapports != ''
+        env:
+          RAPPORTS: ${{ inputs.rapports }}
+          DOSSIER: ${{ inputs.dossier }}
+        run: |
+          {
+            echo "chemins<<FIN"
+            while read -r chemin; do [ -n "$chemin" ] && echo "$DOSSIER/$chemin"; done <<< "$RAPPORTS"
+            echo "FIN"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Publier les rapports
+        if: always() && inputs.rapports != ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ inputs.dossier }}-rapports
+          path: ${{ steps.rapports.outputs.chemins }}
+          if-no-files-found: ignore

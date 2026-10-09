@@ -1,0 +1,96 @@
+name: Django
+
+# Qualité d'un backend Django géré par uv, contre PostgreSQL et Redis réels (lancés par podman) :
+# sans eux la suite tourne sur SQLite (select_for_update omis, contraintes partielles non
+# exercées) et sur un cache local au process.
+# ruff, typage mypy en cliquet (`charte types`), migrations manquantes, pytest avec couverture,
+# planchers de couverture (`charte couverture`).
+on:
+  workflow_call:
+    inputs:
+      dossier:
+        type: string
+        default: backend
+      base:
+        description: Nom de la base, de son utilisateur et de son mot de passe (préfixe)
+        type: string
+        default: app
+      postgres:
+        type: string
+        default: docker.io/library/postgres:16-alpine
+      redis:
+        description: Image Redis des tests (vide = pas de Redis)
+        type: string
+        default: docker.io/library/redis:7-alpine
+      env:
+        description: Variables du projet pour toutes les étapes, une par ligne (CLE=valeur)
+        type: string
+        default: ""
+      mypy:
+        description: Lancer `charte types` (section [types] de charte.toml)
+        type: boolean
+        default: true
+      couverture:
+        description: Lancer `charte couverture` (section [couverture] de charte.toml)
+        type: boolean
+        default: true
+
+jobs:
+  django:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: antoine-tena/kiln/actions/charte@main
+
+      - uses: antoine-tena/kiln/actions/services@main
+        with:
+          base: ${{ inputs.base }}
+          postgres: ${{ inputs.postgres }}
+          redis: ${{ inputs.redis }}
+
+      - name: Variables du projet
+        if: inputs.env != ''
+        env:
+          VARIABLES: ${{ inputs.env }}
+        run: printf '%s\n' "$VARIABLES" | grep -v '^\s*$' >> "$GITHUB_ENV"
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          package-directory: ./${{ inputs.dossier }}
+
+      - name: Dépendances
+        run: uv sync --locked
+        working-directory: ./${{ inputs.dossier }}
+
+      - name: ruff
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+        working-directory: ./${{ inputs.dossier }}
+
+      - name: Typage (mypy, en cliquet)
+        if: inputs.mypy
+        run: charte types
+
+      # Un modèle modifié sans `makemigrations` ne casse aucun test (Django recrée le schéma
+      # depuis les migrations existantes) : il n'apparaissait qu'au `migrate` du déploiement.
+      - name: Aucune migration manquante
+        run: uv run python manage.py makemigrations --check --dry-run
+        working-directory: ./${{ inputs.dossier }}
+
+      - name: pytest
+        run: uv run pytest --cov --cov-branch --cov-report=xml --cov-report=term:skip-covered
+        working-directory: ./${{ inputs.dossier }}
+
+      - name: Publier la couverture
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ inputs.dossier }}-coverage
+          path: ${{ inputs.dossier }}/coverage.xml
+          if-no-files-found: ignore
+
+      - name: Planchers de couverture
+        if: inputs.couverture
+        run: charte couverture

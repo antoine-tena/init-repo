@@ -1,0 +1,85 @@
+name: Python
+
+# Qualité d'un projet Python géré par uv, quel que soit son framework (FastAPI, données,
+# Streamlit, Dash) : ruff, typage mypy en cliquet (`charte types`), pytest avec couverture,
+# planchers de couverture (`charte couverture`). PostgreSQL lancé par podman au besoin.
+on:
+  workflow_call:
+    inputs:
+      dossier:
+        type: string
+        default: backend
+      base:
+        description: Nom de la base PostgreSQL de test
+        type: string
+        default: app
+      postgres:
+        description: Image PostgreSQL (vide = pas de base)
+        type: string
+        default: ""
+      env:
+        description: Variables du projet pour toutes les étapes, une par ligne (CLE=valeur)
+        type: string
+        default: ""
+      mypy:
+        description: Lancer `charte types` (section [types] de charte.toml)
+        type: boolean
+        default: true
+      couverture:
+        description: Lancer `charte couverture` (section [couverture] de charte.toml)
+        type: boolean
+        default: true
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: antoine-tena/kiln/actions/charte@main
+
+      - uses: antoine-tena/kiln/actions/services@main
+        if: inputs.postgres != ''
+        with:
+          base: ${{ inputs.base }}
+          postgres: ${{ inputs.postgres }}
+
+      - name: Variables du projet
+        if: inputs.env != ''
+        env:
+          VARIABLES: ${{ inputs.env }}
+        run: printf '%s\n' "$VARIABLES" | grep -v '^\s*$' >> "$GITHUB_ENV"
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          package-directory: ./${{ inputs.dossier }}
+
+      - name: Dépendances
+        run: uv sync --locked
+        working-directory: ./${{ inputs.dossier }}
+
+      - name: ruff
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+        working-directory: ./${{ inputs.dossier }}
+
+      - name: Typage (mypy, en cliquet)
+        if: inputs.mypy
+        run: charte types
+
+      - name: pytest
+        run: uv run pytest --cov --cov-branch --cov-report=xml --cov-report=term:skip-covered
+        working-directory: ./${{ inputs.dossier }}
+
+      - name: Publier la couverture
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ inputs.dossier }}-coverage
+          path: ${{ inputs.dossier }}/coverage.xml
+          if-no-files-found: ignore
+
+      - name: Planchers de couverture
+        if: inputs.couverture
+        run: charte couverture
