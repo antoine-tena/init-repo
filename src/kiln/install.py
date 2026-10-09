@@ -1,17 +1,17 @@
-"""`init-repo installer` : prépare un poste après le clone, relançable sans risque."""
+"""`kiln install` : prépare un poste après le clone, relançable sans risque."""
 
 import os
 import secrets
 import shutil
 from pathlib import Path
 
-from init_repo.shell import require_tools, run, step
+from kiln.shell import require_tools, run, step
 
 SECRET_KEY_VARIABLE = "DJANGO_SECRET_KEY"
 SECRET_KEY_BYTES = 50
 
 
-def install(root: Path) -> None:
+def install_project(root: Path) -> None:
     require_tools("git", "uv", "pnpm")
     _ensure_pre_commit()
     step("Backend : dépendances")
@@ -24,7 +24,7 @@ def install(root: Path) -> None:
     run(["pnpm", "install", "--frozen-lockfile"], root / "frontend")
     step("Garde-fous git (pre-commit)")
     run(["pre-commit", "install"], root)
-    print("\nPrêt. Lancer le backend et le frontend : init-repo dev")
+    print("\nPrêt. Lancer le backend et le frontend : kiln dev")
 
 
 def _ensure_pre_commit() -> None:

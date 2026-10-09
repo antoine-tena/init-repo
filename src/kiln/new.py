@@ -1,4 +1,4 @@
-"""`init-repo nouveau` : génère un projet complet, l'installe et le publie au besoin."""
+"""`kiln new` : génère un projet complet, l'installe et le publie au besoin."""
 
 import os
 import sys
@@ -8,11 +8,11 @@ from pathlib import Path
 import copier
 import yaml  # fourni par copier
 
-from init_repo import github, installer
-from init_repo.modele import TEMPLATE_REVISION, template_source
-from init_repo.shell import InitRepoError, require_tools, run, step
+from kiln import github, install
+from kiln.shell import KilnError, require_tools, run, step
+from kiln.template import TEMPLATE_REVISION, template_source
 
-INITIAL_COMMIT_MESSAGE = "chore: projet généré par init-repo"
+INITIAL_COMMIT_MESSAGE = "chore: projet généré par kiln"
 
 
 @dataclass(frozen=True)
@@ -26,7 +26,7 @@ class NewProjectRequest:
 
 def create_project(request: NewProjectRequest) -> None:
     if request.destination.exists() and any(request.destination.iterdir()):
-        raise InitRepoError(f"{request.destination} existe déjà et n'est pas vide")
+        raise KilnError(f"{request.destination} existe déjà et n'est pas vide")
     require_tools("git", "uv", "pnpm", *(["gh"] if request.should_publish else []))
     step("Génération depuis le modèle")
     copier.run_copy(
@@ -42,7 +42,7 @@ def create_project(request: NewProjectRequest) -> None:
     run(["git", "init", "-q", "-b", "main"], root)
     _lock_dependencies(root)
     if request.should_install:
-        installer.install(root)
+        install.install_project(root)
     _initial_commit(root)
     if request.should_publish:
         github.publish(root, _repository_name(root), _team_logins(root))

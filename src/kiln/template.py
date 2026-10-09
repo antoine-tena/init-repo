@@ -2,8 +2,8 @@
 
 import os
 
-DEFAULT_TEMPLATE_SOURCE = "https://github.com/antoine-tena/init-repo.git"
-TEMPLATE_SOURCE_VARIABLE = "INIT_REPO_MODELE"
+DEFAULT_TEMPLATE_SOURCE = "https://github.com/antoine-tena/kiln.git"
+TEMPLATE_SOURCE_VARIABLE = "KILN_TEMPLATE"
 # Les projets suivent la tête de main du modèle, sans attendre d'étiquette de version.
 TEMPLATE_REVISION = "HEAD"
 
