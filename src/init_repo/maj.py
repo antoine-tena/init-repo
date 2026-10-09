@@ -6,6 +6,7 @@ import copier
 
 from init_repo.modele import TEMPLATE_REVISION
 from init_repo.shell import InitRepoError, capture, require_tools, run, step
+from init_repo.verifier import verify
 
 PROTECTED_BRANCHES = ("main", "develop")
 
@@ -28,7 +29,8 @@ def update_project(root: Path, *, should_update_template: bool, should_update_de
         _update_dependencies(root)
     step("Fichiers modifiés")
     run(["git", "status", "--short"], root)
-    print("\nRelire le diff (conflits marqués <<<<<<<), vérifier, commiter puis ouvrir une PR.")
+    print("\nRelire le diff (conflits marqués <<<<<<<), puis commiter et ouvrir une PR.")
+    verify(root)
 
 
 def _check_working_branch(root: Path) -> None:
@@ -49,5 +51,6 @@ def _update_dependencies(root: Path) -> None:
     run(["uv", "sync"], root / "backend")
     step("Frontend : dépendances")
     run(["pnpm", "update", "--latest"], root / "frontend")
+    run(["pnpm", "install"], root / "frontend")
     step("Crochets pre-commit")
     run(["uv", "tool", "run", "pre-commit", "autoupdate"], root)

@@ -4,7 +4,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from init_repo import dev, installer, maj, nouveau
+from init_repo import dev, installer, maj, nouveau, verifier
 from init_repo.shell import InitRepoError, repo_root
 
 EXIT_FAILURE = 1
@@ -19,6 +19,7 @@ def build_parser() -> argparse.ArgumentParser:
     update_parser.add_argument("--sans-modele", action="store_true", help="garder l'architecture")
     update_parser.add_argument("--sans-deps", action="store_true", help="garder les dépendances")
     commands.add_parser("dev", help="lancer le backend et le frontend")
+    commands.add_parser("verifier", help="lancer les contrôles du backend et du frontend")
     return parser
 
 
@@ -69,6 +70,8 @@ def dispatch(arguments: argparse.Namespace) -> None:
         )
     elif arguments.command == "dev":
         dev.run_dev_servers(root)
+    elif arguments.command == "verifier":
+        verifier.verify(root)
 
 
 def main() -> None:
