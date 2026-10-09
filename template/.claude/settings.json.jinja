@@ -2,14 +2,18 @@
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "env": {
     "PROJET_NOM": "{{ nom }}",
-    "PROJET_BACK": "backend",
-    "PROJET_FRONT": "frontend",
-    "PROJET_ENV_TEST": "backend/.env"
+    "PROJET_BACK": "{{ 'backend' if backend != 'aucun' else '' }}",
+    "PROJET_FRONT": "{{ 'frontend' if frontend != 'aucun' else '' }}",
+    "PROJET_ENV_TEST": "{{ 'backend/.env' if backend in ['django', 'fastapi'] else '' }}"
   },
+{%- set plugins = (['pile-django@antoine'] if backend == 'django' else []) + (['pile-nuxt@antoine'] if frontend == 'nuxt' else []) %}
+{%- if plugins %}
   "enabledPlugins": {
-    "pile-django@antoine": true,
-    "pile-nuxt@antoine": true
+{%- for plugin in plugins %}
+    "{{ plugin }}": true{{ "," if not loop.last }}
+{%- endfor %}
   },
+{%- endif %}
   "permissions": {
     "deny": [
       "Read(./.env)",

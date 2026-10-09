@@ -1,8 +1,0 @@
-{
-  "recommendations": [
-    "editorconfig.editorconfig",
-    "anthropic.claude-code",
-    "github.vscode-pull-request-github",
-    "davidanson.vscode-markdownlint"
-  ]
-}

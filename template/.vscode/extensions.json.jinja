@@ -1,0 +1,30 @@
+{
+  "recommendations": [
+    "editorconfig.editorconfig",
+    "anthropic.claude-code",
+    "github.vscode-pull-request-github",
+    "davidanson.vscode-markdownlint"
+{%- if backend in ['django', 'fastapi', 'data'] or frontend in ['streamlit', 'dash'] %},
+    "ms-python.python",
+    "charliermarsh.ruff",
+    "ms-python.mypy-type-checker"
+{%- endif %}
+{%- if backend == 'data' %},
+    "marimo-team.vscode-marimo"
+{%- endif %}
+{%- if frontend == 'nuxt' %},
+    "vue.volar",
+    "nuxtr.nuxtr-vscode"
+{%- endif %}
+{%- if frontend == 'astro' %},
+    "astro-build.astro-vscode"
+{%- endif %}
+{%- if frontend in ['nuxt', 'next', 'astro'] %},
+    "dbaeumer.vscode-eslint",
+    "bradlc.vscode-tailwindcss"
+{%- endif %}
+{%- if podman %},
+    "ms-azuretools.vscode-containers"
+{%- endif %}
+  ]
+}
