@@ -1,0 +1,31 @@
+import httpx
+import pytest
+
+from dashboard.api import fetch_health_status
+
+
+def test_health_status_is_read_from_backend(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fake_get(url: str, timeout: float) -> httpx.Response:
+        return httpx.Response(200, json={"status": "ok"})
+
+    monkeypatch.setattr(httpx, "get", fake_get)
+
+    assert fetch_health_status() == "ok"
+
+
+def test_unreachable_backend_gives_none(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fake_get(url: str, timeout: float) -> httpx.Response:
+        raise httpx.ConnectError("refused")
+
+    monkeypatch.setattr(httpx, "get", fake_get)
+
+    assert fetch_health_status() is None
+
+
+def test_malformed_payload_gives_none(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fake_get(url: str, timeout: float) -> httpx.Response:
+        return httpx.Response(200, json=["inattendu"])
+
+    monkeypatch.setattr(httpx, "get", fake_get)
+
+    assert fetch_health_status() is None

@@ -1,0 +1,50 @@
+"""Page d'accueil du tableau de bord."""
+
+{% if backend == 'data' -%}
+import polars as pl
+import streamlit as st
+from pipeline.figures import monthly_totals_figure
+from pipeline.sources import load_measurements
+from pipeline.transforms import monthly_totals
+
+from dashboard.constants import SITE_DESCRIPTION, SITE_TITLE
+
+
+# [CACHE] : le chargement ne se rejoue pas à chaque interaction.
+@st.cache_data
+def load_totals() -> pl.DataFrame:
+    return monthly_totals(load_measurements())
+
+
+def render_home() -> None:
+    st.set_page_config(page_title=SITE_TITLE)
+    st.title(SITE_TITLE)
+    st.write(SITE_DESCRIPTION)
+    st.plotly_chart(monthly_totals_figure(load_totals()))
+{%- elif backend in ['django', 'fastapi'] -%}
+import streamlit as st
+
+from dashboard.api import fetch_health_status
+from dashboard.constants import SITE_DESCRIPTION, SITE_TITLE
+
+
+def render_home() -> None:
+    st.set_page_config(page_title=SITE_TITLE)
+    st.title(SITE_TITLE)
+    st.write(SITE_DESCRIPTION)
+    health_status = fetch_health_status()
+    if health_status is None:
+        st.error("Le backend ne répond pas : lancez-le avec `kiln dev`.")
+    else:
+        st.success(f"Backend joignable (statut : {health_status}).")
+{%- else -%}
+import streamlit as st
+
+from dashboard.constants import SITE_DESCRIPTION, SITE_TITLE
+
+
+def render_home() -> None:
+    st.set_page_config(page_title=SITE_TITLE)
+    st.title(SITE_TITLE)
+    st.write(SITE_DESCRIPTION)
+{%- endif %}
