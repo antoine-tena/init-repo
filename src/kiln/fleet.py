@@ -25,6 +25,9 @@ WORKTREES_DIR = Path(".claude") / "worktrees"
 UPDATE_BRANCH_PREFIX = "chore/kiln-update"
 DEFAULT_INTEGRATION_BRANCH = "main"
 MAX_FILES_PER_COMMIT = 10
+# pre-commit refuse de tourner tant que sa configuration modifiée n'est pas commitée.
+FIRST_COMMITTED = ".pre-commit-config.yaml"
+CONFLICT_MARKER = "<<<<<<< before updating"
 COMMIT_ATTEMPTS = 2
 
 
@@ -95,6 +98,9 @@ def update_one(root: Path, *, allow_major: bool) -> str:
     try:
         _create_worktree(root, worktree, branch, integration)
         failed_checks = _update_worktree(worktree, allow_major=allow_major)
+        conflicted = conflicted_files(worktree)
+        if conflicted:
+            return f"conflits à résoudre ({', '.join(conflicted)}) dans {worktree}"
         if not capture(["git", "status", "--porcelain"], worktree):
             _remove_worktree(root, worktree, branch=branch)
             return "déjà à jour"
@@ -120,6 +126,18 @@ def _update_worktree(worktree: Path, *, allow_major: bool) -> list[str]:
         should_check=False,
     )
     return run_checks(worktree)
+
+
+def conflicted_files(worktree: Path) -> list[str]:
+    """Fichiers où Copier a laissé un conflit à résoudre à la main."""
+    found = subprocess.run(
+        ["git", "grep", "-l", "--untracked", CONFLICT_MARKER],
+        cwd=worktree,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return found.stdout.split()
 
 
 def integration_branch(root: Path) -> str:
@@ -170,6 +188,9 @@ def commit_in_batches(worktree: Path) -> None:
     changed = capture(["git", "diff", "--cached", "--name-only"], worktree).splitlines()
     run(["git", "reset", "-q"], worktree)
     groups: dict[str, list[str]] = {}
+    if FIRST_COMMITTED in changed:
+        groups["pre-commit"] = [FIRST_COMMITTED]
+        changed.remove(FIRST_COMMITTED)
     for path in changed:
         groups.setdefault(path.split("/")[0] if "/" in path else "racine", []).append(path)
     for group, paths in groups.items():
