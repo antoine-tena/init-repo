@@ -180,6 +180,9 @@ puis en strict.
 - **[DEPENDANCES-FIGEES]** Toute dépendance est résolue par un lockfile commité (`uv.lock`,
   `pnpm-lock.yaml`) ; la CI installe en mode figé (`uv sync --locked`, `--frozen-lockfile`) et
   échoue si le lockfile dérive.
+- **[UV-PODMAN]** Python passe par uv (`uv add`, `uv run`, `uv tool install`) : jamais pip,
+  pipx ni `requirements.txt`. Les conteneurs passent par podman (`Containerfile`,
+  `compose.yaml`, `podman-compose`) : jamais docker, `Dockerfile` ni `docker-compose.yml`.
 - **[IMAGES-PAR-EMPREINTE]** Toute image de base de conteneur est épinglée par empreinte
   `@sha256:`, jamais par un tag mobile seul.
 - **[AUDIT-VULNERABILITES]** La CI audite les dépendances à chaque commit (`uv audit` pour
