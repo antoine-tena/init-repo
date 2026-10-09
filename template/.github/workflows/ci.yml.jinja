@@ -55,6 +55,9 @@ jobs:
   conteneurs:
     uses: antoine-tena/kiln/.github/workflows/infra.yml@main
     with:
-      image: "{{ ((['backend'] if backend in ['django', 'fastapi'] else []) + (['frontend'] if frontend != 'aucun' else [])) | join(' ') }}"
+      containerfiles: "{{ ((['backend/Containerfile'] if backend != 'aucun' else []) + (['frontend/Containerfile'] if frontend != 'aucun' else [])) | join(' ') }}"
       compose: compose.yaml
+{%- if backend in ['django', 'fastapi'] %}
+      preparation: cp backend/.env.example backend/.env
+{%- endif %}
 {%- endif %}
