@@ -1,9 +1,9 @@
-"""`init-repo dev` : lance le backend et le frontend ensemble ; Ctrl+C arrête les deux."""
+"""`kiln dev` : lance le backend et le frontend ensemble ; Ctrl+C arrête les deux."""
 
 import subprocess
 from pathlib import Path
 
-from init_repo.shell import step
+from kiln.shell import step
 
 BACKEND_COMMAND = ["uv", "run", "python", "manage.py", "runserver"]
 FRONTEND_COMMAND = ["pnpm", "dev"]

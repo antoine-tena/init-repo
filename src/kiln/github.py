@@ -4,7 +4,7 @@ import json
 import subprocess
 from pathlib import Path
 
-from init_repo.shell import InitRepoError, run, step
+from kiln.shell import KilnError, run, step
 
 RULESET_NAME = "Protection main et develop"
 REPOSITORY_ADMIN_ROLE_ID = 5
@@ -76,4 +76,4 @@ def _post_ruleset(root: Path, repository: str) -> None:
         check=False,
     )
     if completed.returncode != 0:
-        raise InitRepoError("création du ruleset refusée par GitHub")
+        raise KilnError("création du ruleset refusée par GitHub")
