@@ -1,3 +1,4 @@
+{% from "macros.jinja" import py_str -%}
 """Point d'entrée de l'API : `uv run uvicorn app.main:app --reload`."""
 
 import structlog
@@ -27,7 +28,7 @@ def create_app() -> FastAPI:
     settings = get_settings()
     configure_logging(settings.debug)
     application = FastAPI(
-        title="{{ titre }} API",
+        title={{ py_str(titre ~ " API") }},
         version="1.0.0",
         openapi_url=f"{API_PREFIX}/openapi.json",
     )

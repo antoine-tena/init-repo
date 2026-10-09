@@ -1,10 +1,11 @@
+{% from "macros.jinja" import py_str -%}
 """Point d'entrée de l'API Django Ninja ([NINJA])."""
 
 from ninja import NinjaAPI, Router, Schema
 
 HEALTH_STATUS_OK = "ok"
 
-api = NinjaAPI(title="{{ titre }} API", version="1.0.0")
+api = NinjaAPI(title={{ py_str(titre ~ " API") }}, version="1.0.0")
 health_router = Router(tags=["health"])
 
 
