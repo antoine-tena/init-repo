@@ -1,0 +1,15 @@
+/* [STYLE-3] Seul fichier CSS référencé par nuxt.config.ts : Tailwind, les jetons, puis les
+   isolats par ordre alphabétique. */
+@import "tailwindcss";
+@import "./tokens.css";
+
+/* [STYLE-5] !important admis ici : la règle globale doit l'emporter sur toute animation, tierce
+   comprise. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

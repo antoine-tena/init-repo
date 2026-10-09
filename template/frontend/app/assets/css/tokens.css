@@ -1,0 +1,5 @@
+/* [STYLE-3] Seule définition des jetons de thème. */
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --color-brand: oklch(0.55 0.15 250);
+}
