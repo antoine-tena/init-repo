@@ -1,6 +1,24 @@
+{%- set python_dirs = (['backend'] if backend in ['django', 'fastapi', 'data'] else []) + (['frontend'] if frontend in ['streamlit', 'dash'] else []) -%}
+{%- set back_text = {'django': "l'API, en Django + Django Ninja", 'fastapi': "l'API, en FastAPI", 'data': "la chaîne de données (polars, Plotly) et les notebooks marimo"}.get(backend) -%}
+{%- set front_text = {'nuxt': "l'interface, en Nuxt 4 + Vue 3", 'next': "l'interface, en Next.js 16 + React 19", 'astro': "le site, en Astro 7", 'streamlit': "le tableau de bord, en Streamlit", 'dash': "le tableau de bord, en Dash"}.get(frontend) -%}
+{%- set front_url = {'nuxt': 'http://localhost:3000', 'next': 'http://localhost:3000', 'astro': 'http://localhost:4321', 'streamlit': 'http://localhost:8501', 'dash': 'http://localhost:8050'}.get(frontend) -%}
 # {{ titre }}
 
 {{ description }}
+
+## Démarrage rapide
+
+Après le clone, depuis la racine du dépôt (prérequis : [uv](https://docs.astral.sh/uv/)
+{%- if frontend in ['nuxt', 'next', 'astro'] %} et
+[pnpm](https://pnpm.io/) avec Node 24{% endif %}) :
+
+```sh
+uv tool install git+https://github.com/antoine-tena/kiln   # une fois par poste
+kiln install
+kiln dev
+```
+
+Puis ouvrir {{ front_url or ('http://localhost:2718' if backend == 'data' else 'http://localhost:8000/api/docs') }}. Détail de chaque commande ci-dessous.
 
 ## Équipe
 
@@ -8,22 +26,29 @@
 - [@{{ login }}](https://github.com/{{ login }})
 {% endfor %}
 ## Organisation
-
-- `backend/` : l'API, en Django + Django Ninja ; règles dans
-  [`backend/CLAUDE.md`](backend/CLAUDE.md).
-- `frontend/` : l'interface, en Nuxt 4 + Vue 3 ; règles dans
-  [`frontend/CLAUDE.md`](frontend/CLAUDE.md).
+{% if back_text %}
+- `backend/` : {{ back_text }} ; règles dans [`backend/CLAUDE.md`](backend/CLAUDE.md).
+{%- endif %}
+{%- if front_text %}
+- `frontend/` : {{ front_text }} ; règles dans [`frontend/CLAUDE.md`](frontend/CLAUDE.md).
+{%- endif %}
 - [`CLAUDE.md`](CLAUDE.md) : la charte commune (nommage, taille, git…), pour les humains comme
   pour les agents.
 - `.vscode/` : réglages et extensions recommandées, partagés par toute l'équipe.
+{%- if podman %}
+- `compose.yaml` et les `Containerfile` : la pile en conteneurs podman.
+{%- endif %}
 
-Le projet est généré et tenu à jour par
-[kiln](https://github.com/antoine-tena/kiln) (réponses dans `.copier-answers.yml`).
+Le projet est généré et tenu à jour par [kiln](https://github.com/antoine-tena/kiln) (réponses
+dans `.copier-answers.yml`). Changer un paramètre (équipe, frameworks, podman…) :
+`kiln set <clé>=<valeur>`, sur une branche.
 
 ## Installation
 
-Prérequis : [uv](https://docs.astral.sh/uv/), [pnpm](https://pnpm.io/) (avec Node 24) et
-l'outil kiln, installé une fois par poste :
+Prérequis : [uv](https://docs.astral.sh/uv/)
+{%- if frontend in ['nuxt', 'next', 'astro'] %}, [pnpm](https://pnpm.io/) (avec Node 24){% endif %}
+{%- if podman %}, [podman](https://podman.io/){% endif %} et l'outil kiln, installé une fois par
+poste :
 
 ```sh
 uv tool install git+https://github.com/antoine-tena/kiln
@@ -35,37 +60,54 @@ Puis, après le clone, depuis la racine du dépôt :
 kiln install
 ```
 
-La commande installe les dépendances du backend et du frontend, crée `backend/.env` avec une
-clé secrète locale, applique les migrations et active les garde-fous du commit (pre-commit,
-dont le refus de commiter sur `main` ou `develop`). On peut la relancer sans risque.
+La commande demande une fois le système du poste (Linux, WSL ou macOS), installe les
+dépendances ({{ (python_dirs + (['frontend'] if frontend in ['nuxt', 'next', 'astro'] else [])) | join(', ') }})
+{%- if backend in ['django', 'fastapi'] %}, crée `backend/.env`{% endif %}
+{%- if backend == 'django' %}, applique les migrations{% endif %} et active les garde-fous du
+commit (pre-commit, dont le refus de commiter sur `main` ou `develop`). On peut la relancer sans
+risque.
 
 ## Lancer le projet
 
 ```sh
 kiln dev
 ```
-
-- Frontend : http://localhost:3000 (les appels `/api` sont relayés vers le backend).
+{% if backend == 'django' or backend == 'fastapi' %}
 - Backend : http://localhost:8000/api/ (documentation de l'API sur `/api/docs`).
+{%- elif backend == 'data' %}
+- Notebooks marimo : http://localhost:2718.
+{%- endif %}
+{%- if front_url %}
+- Frontend : {{ front_url }}
+{%- if backend in ['django', 'fastapi'] and frontend in ['nuxt', 'next', 'astro'] %} (les appels `/api` sont relayés vers le backend){% endif %}.
+{%- endif %}
+{%- if podman %}
+
+`kiln dev --containers` lance toute la pile dans podman (`compose.yaml`).
+{%- endif %}
 
 ## Mettre à jour
 
-Sur une branche dédiée (`chore/maj-…`), avec un arbre propre :
+Sur une branche dédiée (`chore/kiln-update`), avec un arbre propre :
 
 ```sh
-kiln update
+kiln update            # mises à jour compatibles
+kiln update --major    # y compris les versions majeures
 ```
 
 Elle rapporte les évolutions du modèle (charte, outillage, configuration) sans écraser les
-modifications locales, puis met à jour les dépendances. Relire le diff, lancer les
-vérifications, puis ouvrir une pull request.
+modifications locales, met à jour les dépendances, puis lance les contrôles. Relire le diff,
+puis ouvrir une pull request.
 
 ## Vérifier le code
 
 ```sh
-cd backend && uv run ruff check . && uv run mypy . && uv run pytest
-cd frontend && pnpm typecheck
+kiln check
 ```
+
+Ruff, mypy et pytest pour chaque projet Python
+{%- if frontend in ['nuxt', 'next'] %}, ESLint et le contrôle des types côté frontend
+{%- elif frontend == 'astro' %}, `astro check` côté frontend{% endif %}, puis la charte.
 
 ## Contribuer
 
