@@ -45,6 +45,8 @@ système du poste (Linux, WSL ou macOS) et le garde dans `~/.config/kiln/config.
 | `kiln check` | Ruff, mypy et pytest pour chaque projet Python, ESLint et les types côté front, puis la charte. |
 | `kiln set` | Sans argument, affiche les paramètres du repo. `kiln set clé=valeur…` les change (équipe, frameworks, podman, a-faire…) : le repo est régénéré, un framework retiré emporte ses fichiers. |
 | `kiln update` | Évolutions du modèle, mises à jour compatibles des dépendances, puis contrôles. `--major` : versions majeures comprises. `--no-template`, `--no-deps` pour n'en faire qu'une partie. |
+| `kiln update --all` | Tous les repos kiln du dossier de code (`~/code`, réglable par `dossier_code`) : pour chacun, un worktree depuis la branche d'intégration, la mise à jour, des commits de dix fichiers au plus, une PR (en brouillon si les contrôles échouent). L'arbre principal ne change jamais de branche. |
+| `kiln status` | État des repos kiln du dossier de code : branche, arbre propre ou non, modèle à jour ou en retard, stack. |
 | `charte` | Vérifie le repo contre son `charte.toml` (`charte --detail`, `charte types`, `charte couverture`). |
 
 `set` et `update` travaillent sur une branche, arbre propre ; les conflits entre le modèle et une
@@ -97,7 +99,8 @@ uv run ruff check . && uv run mypy src tests
 
 `src/kiln/charte/` lit le `charte.toml` à la racine du repo. Interdictions (`signaux-django`,
 `journalisation`, `migrations-django`, `temps-constant`, `donnees-perso`, `style-vue`,
-`renvois-audit`, `fichiers-interdits`, `copies`, `compose-profils`), cliquets et planchers
+`renvois-audit`, `fichiers-interdits`, `copies`, `compose-profils`, `outils-interdits` : jamais
+pip ni docker, ni leurs fichiers), cliquets et planchers
 (`taille-fichier`, `routes-longues`, `verrous-django`, `occurrences`, `densite-tests`),
 `[types]` (mypy en cliquet) et `[couverture]` (planchers de pytest-cov) ; paramètres dans la
 docstring de chaque règle. Règle propre à un repo : un module listé dans `regles_locales`,
