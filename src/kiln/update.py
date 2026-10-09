@@ -4,6 +4,7 @@ from collections.abc import Mapping
 from pathlib import Path
 
 import copier
+from copier.errors import UserMessageError
 
 from kiln.check import check_project
 from kiln.deps import lock_dependencies, sync_dependencies, update_dependencies
@@ -45,17 +46,21 @@ def update_project(
 def apply_template(root: Path, answers: Mapping[str, object] | None = None) -> None:
     """Modèle réappliqué (révision la plus récente, réponses éventuellement changées), sans
     écraser les modifications locales : les conflits sont marqués dans les fichiers."""
+    try:
+        copier.run_update(
+            root,
+            data=dict(answers or {}),
+            vcs_ref=TEMPLATE_REVISION,
+            defaults=True,
+            skip_answered=True,
+            overwrite=True,
+            conflict="inline",
+            unsafe=False,
+        )
+    except UserMessageError as error:
+        raise KilnError(f"mise à jour du modèle refusée : {error}") from error
+    # Après Copier, qui exige un arbre propre et réécrit le fichier de réponses.
     replace_legacy_source(root)
-    copier.run_update(
-        root,
-        data=dict(answers or {}),
-        vcs_ref=TEMPLATE_REVISION,
-        defaults=True,
-        skip_answered=True,
-        overwrite=True,
-        conflict="inline",
-        unsafe=False,
-    )
 
 
 def check_working_branch(root: Path) -> None:
