@@ -1,0 +1,173 @@
+# Backend — charte
+
+Section 3 de la charte {{ titre }}, chargée quand on travaille dans `backend/`. Le mode d'emploi
+(identifiants, régimes, hiérarchie), les règles communes (§1), les standards 2026 (§4) et Git
+(§5) sont dans le `CLAUDE.md` de la racine.
+
+## 3. Backend (Django et Django Ninja)
+
+### Socle
+- **[TYPAGE]** Annotations de type sur toutes les signatures (paramètres et retour), vérifiées
+  par mypy. `Any` n'est admis qu'à une frontière non typée (payload brut d'une API tierce, `**kwargs`
+  d'une surcharge Django) ; partout ailleurs : `TypedDict`, `Protocol`, union ou générique.
+- **[NINJA]** Endpoints déclarés sur des `Router` Django Ninja.
+- **[SCHEMAS]** Entrées **et sorties** typées par `Schema` / `ModelSchema`. Pas de
+  `json.loads(request.body)`, pas de dictionnaire de réponse fait à la main — y compris pour un
+  simple accusé (`{"detail": "..."}` a son schéma).
+- **[PERMISSIONS]** Chaque route ou routeur déclare explicitement son authentification
+  (`auth=JWTAuth()`) et sa permission. Une route publique le dit (`auth=None`) et le justifie ;
+  jamais d'opération sensible sans authentification.
+- **[ROUTE-PUBLIQUE]** Toute route accessible sans authentification (connexion, inscription,
+  contact, réinitialisation) est limitée en débit et ne révèle pas si un compte existe.
+- **[PAGINATION]** Une route qui renvoie une liste de taille non bornée est paginée, avec une
+  taille de page maximale côté serveur. Toute liste passe par un même utilitaire de pagination
+  et un schéma commun (`results`, `count`, `page`, `page_size`, `has_next`).
+- **[FICHIERS]** Tout fichier téléversé est validé côté serveur (type réel lu dans le contenu,
+  pas dans l'extension ; taille maximale), passé à l'antivirus, et servi sous un nom généré —
+  jamais le nom fourni par l'utilisateur.
+
+### Pilier I — Isolation des couches
+- **[VUE-15]** La vue est un maître d'hôtel : elle reçoit la requête, vérifie identité et
+  permission, délègue au service et renvoie la réponse. Aucun calcul, aucun `if/else` métier,
+  aucune requête ORM brute. **Au-delà de 15 lignes, une vue est défectueuse** (cliquet).
+- **[MODELE-NU]** Le modèle décrit la structure de la table. Pas de calcul complexe, pas de
+  requête en boucle, pas d'appel à un service tiers dans `save()` ; ce qui dépasse la
+  normalisation d'un champ va dans un service.
+- **[CHAMPS-COMMUNS]** Un nouveau modèle horodaté hérite de `core.models.TimeStampedModel`
+  (`created_at`, `updated_at`) ; son ordre d'affichage s'appelle `display_order`, son auteur
+  `created_by`. Les champs déjà publiés gardent leur nom ([CONTRAT-FIGE]).
+- **[SIGNAUX]** Les signaux Django sont interdits : effets de bord invisibles, déterminisme
+  brisé (strict).
+
+### Pilier II — Persistance
+- **[N+1]** Toute relation parcourue est préchargée par `.select_related()` (FK directes) ou
+  `.prefetch_related()` (M2M, FK inverses). Aucune requête implicite dans une boucle. Les tests
+  des routes de liste fixent le nombre de requêtes (`django_assert_num_queries`).
+- **[INDEX]** Toute combinaison de champs fréquemment filtrée, triée ou dédoublonnée a son index
+  composite dans `Meta.indexes`.
+
+### Pilier III — Contrats et typage
+- **[ENTREES]** Payloads entrants validés par un schéma strict, jamais lus bruts.
+- **[RETOURS]** Une fonction qui renvoie plusieurs valeurs renvoie une `dataclass(frozen=True)`
+  (ou un schéma), pas un tuple.
+- **[MYPY]** Variables internes typées là où l'inférence ne suffit pas ; mypy passe.
+
+### Pilier IV — Sécurité zero-trust
+- **[IDEMPOTENCE]** Toute mutation (`POST`, `PUT`, `PATCH`) exige un en-tête `Idempotency-Key`
+  unique ; une requête rejouée reçoit la réplique exacte de la première réponse stockée.
+- **[RLS]** Sécurité au niveau des lignes PostgreSQL pour isoler la session de l'utilisateur
+  actif, avec un rôle de base restreint (jamais super-utilisateur).
+- **[HORS-REQUETE]** E-mail, génération de fichier, appel à une API tierce (API tierce…) sortent du
+  cycle de la requête. L'effet de bord est inscrit dans `OutboxEvent` au sein de la transaction
+  métier ([OUTBOX]) et exécuté ensuite par Celery (courtier Redis) : service `celery-beat` pour
+  le répartiteur, `celery-worker` pour les handlers. Aucun `.delay()` direct depuis une
+  requête.
+
+### Pilier V — Erreurs sémantiques
+- **[ERREURS]** Toute exception métier dérive d'une exception de base unique, porte un code
+  machine unique en `UPPER_SNAKE_CASE`, et est traduite par le middleware central au format :
+
+  ```json
+  {"status": "fail", "code": "DATASET_PERIOD_OUT_OF_RANGE",
+   "message": "La période demandée dépasse les données disponibles.",
+   "timestamp": "2026-06-19T14:22:45Z", "meta": {"requested_end": "2027-01-01", "max_end": "2026-06-30"}}
+  ```
+
+  Aucun dictionnaire d'erreur artisanal dans les services ou les vues. Le `message` s'adresse
+  à l'utilisateur, en français ; aucun détail technique (trace, SQL, nom de classe) ne sort en
+  production.
+
+### Pilier VI — Domaine (DDD lite)
+- **[SERVICES]** Tout traitement métier (calcul, validation croisée, workflow multi-modèles)
+  vit dans un service (`services/`) ou un objet de commande.
+- **[DOMAINE-HERMETIQUE]** Aucun objet HTTP (`request`, `request.user`, `HttpRequest`) n'entre
+  dans la couche service : la vue extrait, valide et passe des structures pures (schéma,
+  dataclass, identifiants).
+- **[TRANSACTIONS]** Toute écriture touchant plus d'une ligne ou d'une table est enveloppée
+  dans `transaction.atomic()`, au périmètre le plus court possible.
+
+### Pilier VII — Concurrence
+- **[VERROUS]** Compteurs, paiements, soldes, places : verrouillage pessimiste avec
+  `.select_for_update(nowait=True)` ou `.select_for_update(skip_locked=True)` (cliquet). Un
+  verrou bloquant n'est admis que sous le `lock_timeout` de connexion, justifié au point
+  d'appel.
+- **[F-EXPRESSIONS]** Incrément et décrément par expression `F()` déléguée à PostgreSQL
+  (`.update(counter=F("counter") + 1)`), jamais lecture-calcul-écriture en Python.
+
+### Pilier VIII — Observabilité
+- **[JOURNALISATION]** `print()` et `logging.getLogger` sont bannis : journalisation
+  structurée `structlog` (`logger = structlog.get_logger(__name__)`), un nom d'événement
+  stable de la forme `domaine.evenement`, en snake_case de part et d'autre du point, et des
+  champs, jamais une phrase formatée (`logger.info("dataset.imported", dataset_id=…)`).
+  Chaque événement porte l'action, l'utilisateur concerné sous le champ `user_id`
+  (identifiant, voir [DONNEES-PERSO]) et le contexte d'exécution.
+- **[CORRELATION]** Chaque requête reçoit ou hérite d'un `X-Request-ID`, injecté dans chaque
+  log, chaque `OutboxEvent` et chaque appel sortant ; les tâches de fond portent un `job_id`
+  équivalent (la tâche qui traite une ligne d'outbox relie sa clé d'idempotence et son
+  request id à son contexte de journalisation).
+- **[SANTE-ASYNC]** La chaîne asynchrone a sa sonde : `outbox_health` (battement du
+  répartiteur, lignes en retard, échecs récents, longueur de la file Celery) sur
+  `celery-beat`, `celery inspect ping` sur `celery-worker`.
+
+### Pilier IX — Évolution de l'API
+- **[CONTRAT-FIGE]** Une fois en production, la signature d'un endpoint (entrée et sortie) est
+  figée. Tout changement destructif ouvre une nouvelle version (`/api/v2/`). Ajouter un champ
+  optionnel n'est pas destructif.
+- **[DEPRECATION]** Une route ou un champ obsolète renvoie les en-têtes `Deprecation` (date
+  d'obsolescence) et `Sunset` (date de retrait).
+
+### Pilier X — Tests
+- **[HORLOGE]** Pas de `timezone.now()` / `datetime.now()` bruts dans les assertions :
+  `freezegun` (`@freeze_time`) pour tout test lié à une date ou une expiration (cliquet).
+- **[RESEAU]** Aucun test n'émet de requête réseau réelle (API tierce compris) : tout appel sortant
+  est simulé.
+- **[NON-REGRESSION]** Toute correction de bug arrive avec le test qui l'aurait détectée.
+- **[TESTS-PERMISSIONS]** Toute route protégée a au moins un test qui vérifie le refus
+  (`401` anonyme, `403` rôle insuffisant).
+
+### Pilier XI — Migrations
+- **[MIGRATIONS]** Tout changement de modèle arrive avec sa migration Django, générée par
+  `makemigrations` et numérotée à la suite des précédentes (`0002_…`, `0003_…`). Une migration
+  fusionnée dans `main` ne se modifie ni ne se supprime plus : une base l'a peut-être déjà
+  appliquée, on corrige par une migration suivante. Des données de départ nouvelles passent
+  par une migration de données (`RunPython`, avec son retour arrière).
+- Le déploiement applique les migrations (`migrate`) et **garde les données** : on ne
+  reconstruit pas la base pour livrer un schéma.
+- Une base qui garde ses données ne supporte pas tout d'un coup : supprimer ou renommer une
+  colonne encore lue par le code déployé se fait en deux livraisons (le code cesse de la lire,
+  puis la migration la retire).
+
+### Pilier XII — Outbox transactionnelle
+- **[OUTBOX]** Aucun effet de bord externe (API tierce, e-mail, publication Redis) dans le flux
+  d'une transaction. L'événement est inscrit dans `OutboxEvent` dans la même transaction SQL ;
+  la tâche périodique `outbox.dispatch` réclame les lignes dues (`SKIP LOCKED`) et confie
+  chacune à `outbox.process_event`, qui appelle le handler et ne marque la ligne traitée
+  qu'après confirmation. La table reste la source de vérité : Redis ne transporte qu'un
+  identifiant, et une ligne perdue en route est reprise par le répartiteur.
+- **[REPRISE]** Le compte des tentatives, le délai exponentiel et l'échec définitif vivent dans
+  la ligne (`retry_count`, `next_attempt_at`, `failed_at`), jamais dans `Task.retry` : ils
+  restent visibles dans l'administration et relançables. Côté Celery, `acks_late` et
+  `reject_on_worker_lost` rendent à la file une tâche dont le worker meurt.
+- **[HANDLER-IDEMPOTENT]** Un handler d'outbox peut être rejoué (livraison au moins une fois) :
+  il est idempotent, et transmet une clé d'idempotence à l'API tierce quand elle en accepte une.
+
+### Pilier XIII — Cache
+- **[STAMPEDE]** Une clé très sollicitée est protégée contre la ruée à l'expiration
+  (expiration probabiliste anticipée ou verrou Redis) : un seul worker régénère, les autres
+  lisent l'ancienne valeur.
+- **[CACHE-TAGS]** Invalidation par tags, jamais par clés construites à la main : modifier
+  le jeu de données 42 invalide tout ce qui porte le tag `dataset_42`.
+
+### Pilier XIV — Cryptographie
+- **[TEMPS-CONSTANT]** Toute vérification de jeton, clé API, secret de webhook, code ou
+  empreinte de code se fait par `secrets.compare_digest(a, b)`, jamais par `==` / `!=`, y
+  compris entre deux empreintes.
+- **[CHIFFREMENT]** Les données très sensibles (coordonnées bancaires, jetons d'accès tiers,
+  pièces d'identité) sont chiffrées dans la couche Python, par une clé gérée par un KMS, avant
+  d'atteindre l'ORM.
+
+### Pilier XV — Contrat front/back
+- **[OPENAPI]** Le schéma OpenAPI est généré depuis le code du backend et versionné
+  (`openapi.json`) à chaque changement d'API.
+- **[DERIVE]** La CI échoue si un schéma backend change sans que les types TypeScript générés
+  côté frontend soient régénérés et compatibles.
