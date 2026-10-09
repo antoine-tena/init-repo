@@ -1,0 +1,32 @@
+# Modèle de projet d'init-repo : les fichiers sont dans template/, seuls les `.jinja` sont
+# interprétés (les gabarits Vue gardent leurs `{{ }}`).
+_subdirectory: template
+_templates_suffix: .jinja
+_answers_file: .copier-answers.yml
+_min_copier_version: "9.4"
+
+nom:
+  type: str
+  help: Nom court du projet (minuscules, chiffres, tirets), préfixe des paquets
+  validator: >-
+    {% if not (nom | regex_search('^[a-z][a-z0-9-]*$')) %}Minuscules, chiffres et tirets seulement.{% endif %}
+
+titre:
+  type: str
+  help: Titre affiché du projet
+  default: "{{ nom | replace('-', ' ') | title }}"
+
+description:
+  type: str
+  help: Une phrase qui dit ce que fait le projet
+  default: "{{ titre }}."
+
+proprietaire:
+  type: str
+  help: Compte ou organisation GitHub propriétaire du dépôt
+  default: antoine-tena
+
+equipe:
+  type: yaml
+  help: Logins GitHub de l'équipe (relecteurs), en liste YAML
+  default: "[{{ proprietaire }}]"
