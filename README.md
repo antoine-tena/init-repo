@@ -13,8 +13,12 @@ Un projet généré contient :
   `.gitattributes`, `.gitignore`, modèle de PR, `CODEOWNERS`, pre-commit (ruff, ESLint, charte,
   refus de commiter sur `main` et `develop`) ;
 - la CI GitHub (`.github/workflows/ci.yml`), qui appelle les workflows réutilisables de kiln ;
-- en option : le suivi du travail (`docs/a-faire/`), les conteneurs podman, le dépôt GitHub
-  privé avec `main` et `develop` protégées et les correctifs de sécurité Dependabot.
+- le suivi du travail, d'office : `docs/a-faire/` (`a-faire.md`, `ecarte.md`, `urgent.md`,
+  skill `base:a-faire`), que la status line de Claude Code compte ;
+- les réglages de la status line propres au repo (`statusline_ci`, `url_sante_prod`), posés en
+  `git config statusline.*` par `kiln install`, `kiln new` et `kiln set` ;
+- en option : les conteneurs podman, le dépôt GitHub privé avec `main` et `develop` protégées et
+  les correctifs de sécurité Dependabot.
 
 Le modèle vit dans [`template/`](template/), servi par [Copier](https://copier.readthedocs.io) :
 chaque projet garde dans `.copier-answers.yml` ses réponses et la version du modèle dont il
@@ -53,7 +57,8 @@ système du poste (Linux, WSL ou macOS) et le garde dans `~/.config/kiln/config.
 modification locale sont marqués dans le fichier (`<<<<<<<`). Relire, commiter, ouvrir une PR.
 
 Options de `new` : `--type`, `--backend`, `--frontend`, `--podman`, `--name`, `--title`,
-`--description`, `--owner`, `--team login1,login2`, `--todo "<boussole>"`, `--github`,
+`--description`, `--owner`, `--team login1,login2`, `--goal "<boussole>"`, `--prod-url <url>`,
+`--github`,
 `--no-install`, `--template <chemin ou URL>`. Les questions sans option sont posées dans le
 terminal.
 
