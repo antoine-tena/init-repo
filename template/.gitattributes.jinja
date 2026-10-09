@@ -7,5 +7,11 @@
 *.ico binary
 
 # Fichiers générés, exemptés de [TAILLE-FICHIER] (CLAUDE.md).
+{%- if backend in ['django', 'fastapi', 'data'] %}
 backend/uv.lock linguist-generated=true
+{%- endif %}
+{%- if frontend in ['streamlit', 'dash'] %}
+frontend/uv.lock linguist-generated=true
+{%- elif frontend != 'aucun' %}
 frontend/pnpm-lock.yaml linguist-generated=true
+{%- endif %}

@@ -27,20 +27,29 @@ repos:
 
   - repo: local
     hooks:
-      - id: ruff-check
-        name: ruff check (backend)
-        entry: bash -c 'cd backend && uv run ruff check --fix --force-exclude "${@#backend/}"' --
+{%- set python_dirs = (['backend'] if backend in ['django', 'fastapi', 'data'] else []) + (['frontend'] if frontend in ['streamlit', 'dash'] else []) %}
+{%- for dossier in python_dirs %}
+      - id: ruff-check-{{ dossier }}
+        name: ruff check ({{ dossier }})
+        entry: bash -c 'cd {{ dossier }} && uv run ruff check --fix --force-exclude "${@#{{ dossier }}/}"' --
         language: system
         types: [python]
-        files: ^backend/
+        files: ^{{ dossier }}/
 
-      - id: ruff-format
-        name: ruff format (backend)
-        entry: bash -c 'cd backend && uv run ruff format --force-exclude "${@#backend/}"' --
+      - id: ruff-format-{{ dossier }}
+        name: ruff format ({{ dossier }})
+        entry: bash -c 'cd {{ dossier }} && uv run ruff format --force-exclude "${@#{{ dossier }}/}"' --
         language: system
         types: [python]
-        files: ^backend/
-
+        files: ^{{ dossier }}/
+{% endfor %}
+{%- if frontend in ['nuxt', 'next'] %}
+      - id: eslint
+        name: eslint (frontend)
+        entry: bash -c 'cd frontend && pnpm exec eslint --fix "${@#frontend/}"' --
+        language: system
+        files: ^frontend/.*\.(vue|ts|tsx|mjs)$
+{% endif %}
       - id: charte
         name: charte (charte.toml)
         entry: charte
