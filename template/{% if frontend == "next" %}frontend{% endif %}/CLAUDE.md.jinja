@@ -1,0 +1,42 @@
+# Frontend — charte
+
+Section 2 de la charte {{ titre }}, chargée quand on travaille dans `frontend/`. Le mode d'emploi
+(identifiants, régimes, hiérarchie), les règles communes (§1), les standards 2026 (§4) et Git
+(§5) sont dans le `CLAUDE.md` de la racine. `AGENTS.md`, écrit par `next dev`, renvoie à la
+documentation de Next.js livrée dans `node_modules/next/dist/docs/` : la lire avant d'utiliser
+une API de Next.js.
+
+## 2. Frontend (Next.js 16 + React 19)
+
+Lancer : `pnpm dev` (ou `kiln dev`). Vérifier : `pnpm lint`, `pnpm typecheck` (ou `kiln check`).
+
+### Code
+- **[TS-STRICT]** TypeScript strict sur tous les `.ts` et `.tsx`.
+- **[ZERO-ANY]** Zéro `any` : `unknown` puis un rétrécissement de type (règle ESLint).
+- **[ASYNC]** `async/await` avec `try/catch` uniquement ; chaînes `.then().catch()` interdites.
+- **[SERVEUR-D-ABORD]** Composants serveur par défaut. `"use client"` seulement pour un
+  composant qui gère une interaction (état, événement, API du navigateur), le plus bas possible
+  dans l'arbre : une page entière n'est jamais client.
+- **[IMPORTS-EXPLICITES]** Imports par l'alias `@/` (`@/components/…`, `@/lib/…`), jamais de
+  chemin relatif qui remonte (`../../`).
+- **[APPELS-API]** Les composants n'appellent jamais l'API directement : ils passent par une
+  fonction de `lib/` (`lib/api.ts`), typée, qui valide la réponse avant de la rendre.
+- **[MUTATIONS]** Une écriture passe par une action serveur (`"use server"`) qui valide ses
+  entrées, jamais par un `fetch` écrit dans un composant client.
+- **[ETATS-UI]** Tout écran qui charge des données traite explicitement les trois états :
+  chargement (`Suspense` ou `loading.tsx`), erreur (`error.tsx`, message compréhensible, jamais
+  « Erreur. » seul) et liste vide.
+- **[ACCESSIBILITE]** Chaque champ a un `<label>` associé, chaque bouton-icône un
+  `aria-label`, chaque image informative un `alt` (`next/image`). Tout est utilisable au clavier
+  et le focus reste visible.
+
+### Stylage
+- **[STYLE-1]** Pas de CSS Modules ni de `{% raw %}style={{ }}{% endraw %}` en ligne : Tailwind dans `className`.
+- **[STYLE-2]** **Tailwind par défaut**, directement dans le JSX. CSS déporté seulement pour une
+  animation à étapes, un élément natif du navigateur ou un composant tiers boîte noire.
+- **[STYLE-3]** `app/globals.css` est le seul fichier CSS : il importe Tailwind et porte les
+  jetons de thème (`@theme`). Un composant écrit la classe d'un jeton, jamais une valeur
+  arbitraire (`text-[0.7rem]`) qui le recopie.
+- **[STYLE-5]** Anti-patterns interdits : classes arbitraires en rafale, `@apply` pour recréer
+  un composant (c'est le rôle d'un composant React), `!important` hors surcharge d'une
+  bibliothèque tierce qui l'impose.

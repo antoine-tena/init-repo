@@ -1,0 +1,25 @@
+{
+  "editor.formatOnSave": true,
+  "editor.rulers": [100],
+  "files.eol": "\n",
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+  "files.exclude": {
+    ".claude/worktrees": true
+  },
+  "search.exclude": {
+    ".claude/worktrees": true
+  },
+{%- if backend in ['django', 'fastapi', 'data'] or frontend in ['streamlit', 'dash'] %}
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff"
+  },
+{%- endif %}
+{%- if podman %}
+  "containers.containerClient": "com.microsoft.visualstudio.containers.podman",
+  "containers.orchestratorClient": "com.microsoft.visualstudio.orchestrators.podmancompose",
+{%- endif %}
+  "[markdown]": {
+    "files.trimTrailingWhitespace": false
+  }
+}

@@ -48,23 +48,24 @@ def publish(root: Path, repository: str, team_logins: list[str]) -> None:
     run(["gh", "repo", "create", repository, "--private", "--source", ".", "--push"], root)
     step("GitHub : protection de main et develop")
     _post_ruleset(root, repository)
+    step("GitHub : alertes et correctifs de sécurité (Dependabot)")
+    _enable_security_updates(root, repository)
     owner = repository.split("/")[0]
     for login in team_logins:
         if login != owner:
             step(f"GitHub : invitation de {login}")
-            run(
-                [
-                    "gh",
-                    "api",
-                    "-X",
-                    "PUT",
-                    f"repos/{repository}/collaborators/{login}",
-                    "-f",
-                    "permission=push",
-                    "--silent",
-                ],
-                root,
-            )
+            _gh_put(root, f"repos/{repository}/collaborators/{login}", "permission=push")
+
+
+def _gh_put(root: Path, endpoint: str, *fields: str) -> None:
+    field_options = [option for field in fields for option in ("-f", field)]
+    run(["gh", "api", "-X", "PUT", endpoint, *field_options, "--silent"], root)
+
+
+def _enable_security_updates(root: Path, repository: str) -> None:
+    """Dependabot ne propose que les correctifs de sécurité ; le reste passe par kiln update."""
+    _gh_put(root, f"repos/{repository}/vulnerability-alerts")
+    _gh_put(root, f"repos/{repository}/automated-security-fixes")
 
 
 def _post_ruleset(root: Path, repository: str) -> None:

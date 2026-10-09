@@ -1,0 +1,35 @@
+# Frontend — charte
+
+Section 2 de la charte {{ titre }}, chargée quand on travaille dans `frontend/`. Le mode d'emploi
+(identifiants, régimes, hiérarchie), les règles communes (§1), les standards 2026 (§4) et Git
+(§5) sont dans le `CLAUDE.md` de la racine.
+
+## 2. Frontend (Dash)
+
+Lancer : `uv run python app.py` (ou `kiln dev`). Vérifier : `kiln check`.
+
+### Code
+- **[TYPAGE]** Annotations de type sur toutes les signatures, vérifiées par mypy strict.
+- **[LAYOUT]** La mise en page est une fonction (`build_layout`), confiée à `app.layout` : elle
+  est évaluée à chaque chargement de page, jamais figée au démarrage.
+- **[IDS]** Les identifiants de composants reliés par un callback sont des constantes de
+  `dashboard/constants.py`, jamais des chaînes répétées.
+- **[CALLBACKS]** Un callback est une fonction pure et typée (≤ [TAILLE-FONCTION]) qui reçoit les
+  valeurs des composants et renvoie les nouvelles : pas d'état global, pas de lecture de
+  variable de module modifiée ailleurs. Il s'enregistre dans `dashboard/callbacks.py`.
+- **[CALCULS-HORS-UI]** Aucun calcul, aucune transformation de données dans la mise en page ni
+  dans un callback : il appelle {% if backend == 'data' %}la chaîne `pipeline/` du backend{% elif backend in ['django', 'fastapi'] %}l'API par `dashboard/api.py`{% else %}des fonctions pures d'un module dédié{% endif %} et met le résultat en
+  forme.
+{%- if backend in ['django', 'fastapi'] %}
+- **[APPELS-API]** La mise en page et les callbacks n'appellent jamais l'API directement : ils
+  passent par `dashboard/api.py`, qui valide la réponse avant de la rendre.
+{%- endif %}
+- **[ETATS-UI]** Toute zone qui charge des données traite explicitement les trois états :
+  chargement (`dcc.Loading`), erreur (message compréhensible) et jeu vide.
+- **[ACCESSIBILITE]** Chaque contrôle a un `html.Label` relié (`htmlFor`), chaque graphique un
+  titre et des axes titrés
+{%- if backend == 'data' %} ([FIGURES-ACCESSIBLES]){% endif %} ; tout est utilisable au clavier.
+
+### Tests
+- **[TESTS-UI]** La mise en page et chaque callback ont leurs tests, appelés comme des fonctions
+  ordinaires, sans navigateur. Les appels extérieurs sont simulés ([RESEAU]).

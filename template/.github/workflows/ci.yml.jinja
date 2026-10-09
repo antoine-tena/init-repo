@@ -1,0 +1,60 @@
+name: CI
+
+# Les workflows réutilisables vivent dans kiln (antoine-tena/kiln, public) : ils évoluent pour
+# tous les projets à la fois. Le projet ne garde ici que ses paramètres.
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+{%- if backend == 'django' %}
+  backend:
+    uses: antoine-tena/kiln/.github/workflows/django.yml@main
+    with:
+      base: {{ nom | replace('-', '_') }}
+      env: |
+        DJANGO_SECRET_KEY=ci-sans-valeur-secrete
+        DJANGO_DEBUG=True
+{%- elif backend in ['fastapi', 'data'] %}
+  backend:
+    uses: antoine-tena/kiln/.github/workflows/python.yml@main
+    with:
+      dossier: backend
+{%- endif %}
+{%- if frontend in ['nuxt', 'next', 'astro'] %}
+
+  frontend:
+    uses: antoine-tena/kiln/.github/workflows/pnpm.yml@main
+    with:
+      scripts: |
+{%- if frontend != 'astro' %}
+        lint
+{%- endif %}
+        typecheck
+        build
+{%- elif frontend in ['streamlit', 'dash'] %}
+
+  frontend:
+    uses: antoine-tena/kiln/.github/workflows/python.yml@main
+    with:
+      dossier: frontend
+{%- endif %}
+
+  charte:
+    uses: antoine-tena/kiln/.github/workflows/charte.yml@main
+
+  securite:
+    uses: antoine-tena/kiln/.github/workflows/securite.yml@main
+    with:
+      uv: "{{ ((['backend'] if backend != 'aucun' else []) + (['frontend'] if frontend in ['streamlit', 'dash'] else [])) | join(' ') }}"
+      pnpm: "{{ 'frontend' if frontend in ['nuxt', 'next', 'astro'] else '' }}"
+{%- if podman %}
+
+  conteneurs:
+    uses: antoine-tena/kiln/.github/workflows/infra.yml@main
+    with:
+      image: "{{ ((['backend'] if backend in ['django', 'fastapi'] else []) + (['frontend'] if frontend != 'aucun' else [])) | join(' ') }}"
+      compose: compose.yaml
+{%- endif %}

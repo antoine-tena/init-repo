@@ -1,0 +1,47 @@
+[project]
+name = "{{ nom }}-frontend"
+version = "0.1.0"
+requires-python = ">=3.14"
+dependencies = [
+{%- if backend == 'data' %}
+    "{{ nom }}-backend",
+{%- elif backend in ['django', 'fastapi'] %}
+    "httpx>=0.28.1,<0.29.0",
+{%- endif %}
+    "streamlit>=1.65.0,<2.0.0",
+]
+{%- if backend == 'data' %}
+
+# La chaîne de données du backend, importée telle quelle ([CALCULS-HORS-UI]).
+[tool.uv.sources]
+{{ nom }}-backend = { path = "../backend", editable = true }
+{%- endif %}
+
+[dependency-groups]
+dev = [
+    "mypy>=2.4.0,<3.0.0",
+    "pytest>=9.1.1,<10.0.0",
+    "pytest-cov>=7.1.0,<8.0.0",
+    "ruff>=0.16.10,<0.17.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "SIM", "RUF", "ANN"]
+
+[tool.mypy]
+strict = true
+
+# Plotly ne publie pas de types.
+[[tool.mypy.overrides]]
+module = ["plotly", "plotly.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+python_files = ["test_*.py"]
+
+[tool.coverage.run]
+source = ["dashboard"]

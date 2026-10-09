@@ -1,13 +1,28 @@
+{%- set back_py = backend in ['django', 'fastapi', 'data'] %}
+{%- set front_py = frontend in ['streamlit', 'dash'] %}
+{%- set front_js = frontend in ['nuxt', 'next', 'astro'] %}
+{%- set api = backend in ['django', 'fastapi'] %}
+{%- set back_label = {'django': 'Django + Django Ninja', 'fastapi': 'FastAPI', 'data': 'données Python : polars, marimo, Plotly'}.get(backend) %}
+{%- set front_label = {'nuxt': 'Nuxt 4 + Vue 3', 'next': 'Next.js 16 + React 19', 'astro': 'Astro 7', 'streamlit': 'Streamlit', 'dash': 'Dash'}.get(frontend) -%}
 # {{ titre }} — consignes et charte de développement
 
 {{ description }}
 
-Monorepo : backend Django + Django Ninja (`backend/`) et frontend Nuxt 4 + Vue 3
-(`frontend/`). Ce fichier réunit les consignes de travail sur le dépôt et la **charte**, norme
-unique du code, reprise de celle d'AnnSki : tout code nouveau la respecte, humains et agents.
-La charte tient en trois fichiers : celui-ci (§0, §1, §4, §5),
-[`frontend/CLAUDE.md`](frontend/CLAUDE.md) (§2) et [`backend/CLAUDE.md`](backend/CLAUDE.md)
-(§3), chargés par Claude Code dès qu'il travaille dans le dossier.
+{% if back_label and front_label -%}
+Monorepo : backend {{ back_label }} (`backend/`) et frontend {{ front_label }}
+(`frontend/`).
+{%- elif back_label -%}
+Backend {{ back_label }} (`backend/`).
+{%- else -%}
+Frontend {{ front_label }} (`frontend/`).
+{%- endif %}
+Ce fichier réunit les consignes de travail sur le dépôt et la **charte**, norme unique du code,
+reprise de celle d'AnnSki : tout code nouveau la respecte, humains et agents.
+La charte tient en {{ 'trois' if back_label and front_label else 'deux' }} fichiers : celui-ci (§0, §1, §4, §5)
+{%- if front_label %},
+[`frontend/CLAUDE.md`](frontend/CLAUDE.md) (§2){% endif %}
+{%- if back_label %} et [`backend/CLAUDE.md`](backend/CLAUDE.md)
+(§3){% endif %}, chargés par Claude Code dès qu'il travaille dans le dossier.
 
 ## Langue
 
@@ -51,21 +66,33 @@ casserait le contrat ([CONTRAT-FIGE]) ; on ne le fait qu'en ouvrant une nouvelle
 
 ---
 
-## 1. Règles communes aux deux codebases
+## 1. Règles communes{{ ' aux deux codebases' if back_label and front_label }}
 
 ### Taille et découpage
 - **[TAILLE-FICHIER]** 300 lignes au plus par fichier (cliquet).
+{%- if frontend == 'nuxt' %}
   - Frontend : un composant Vue qui dépasse devient un dossier (un point d'entrée et des
     sous-composants).
+{%- elif frontend == 'next' %}
+  - Frontend : un composant React qui dépasse devient un dossier (un point d'entrée et des
+    sous-composants).
+{%- elif frontend == 'astro' %}
+  - Frontend : un composant Astro qui dépasse devient un dossier (un point d'entrée et des
+    sous-composants).
+{%- elif front_py %}
+  - Frontend : une page qui dépasse devient un paquet de sous-modules.
+{%- endif %}
+{%- if back_py %}
   - Backend : un module qui dépasse devient un paquet ; `__init__.py` réexporte l'API publique.
+{%- endif %}
   - Exemptés : migrations générées, `settings.py`, fichiers générés — ceux que
     `.gitattributes` marque `linguist-generated`, seule liste (`openapi.json`, types
     TypeScript générés, verrous).
 - **[TAILLE-FONCTION]** Une fonction = une responsabilité, **30 lignes au plus** (hors
-  template des fichiers Vue, hors docstring). Un test peut aller jusqu'à 40 lignes si le
+  gabarit des composants, hors docstring). Un test peut aller jusqu'à 40 lignes si le
   découper cacherait le scénario.
 - **[UNE-CLASSE]** Une classe par fichier. Exceptions, qui restent sous [TAILLE-FICHIER] : les
-  schémas Ninja / Pydantic d'un même domaine (`schemas.py`, `responses.py`), les exceptions
+  schémas Pydantic d'un même domaine (`schemas.py`, `responses.py`), les exceptions
   métier d'un même domaine, les classes de test d'un même fichier de test.
 
 ### Nommage
@@ -76,32 +103,42 @@ casserait le contrat ([CONTRAT-FIGE]) ; on ne le fait qu'en ouvrant une nouvelle
 - **[VOCABULAIRE]** Le code parle comme les apps du backend, en anglais ; les textes affichés
   (titres, axes, légendes, messages) sont en français. Les adresses des pages sont des URL
   publiques et n'ont pas à suivre le vocabulaire du code.
-- **[BOOLEENS]** Un booléen est préfixé : `is`, `has`, `should`, `can` côté frontend
-  (`isLoading`, `hasMissingValues`) ; `is_`, `has_`, `should_`, `can_` côté backend. Les champs
-  déjà publiés dans l'API restent tels quels ([CONTRAT-FIGE]).
-- **[CASSE]** Composants Vue en PascalCase préfixé par le domaine (`ChartLegend`,
-  `MapTooltip`) ; classes Python en PascalCase ; fonctions et variables Python en snake_case ;
-  constantes en `UPPER_SNAKE_CASE`.
+- **[BOOLEENS]** Un booléen est préfixé :
+{%- if front_js %} `is`, `has`, `should`, `can` côté frontend
+  (`isLoading`, `hasMissingValues`) ;{% endif %} `is_`, `has_`, `should_`, `can_` en Python.
+{%- if api %} Les champs
+  déjà publiés dans l'API restent tels quels ([CONTRAT-FIGE]).{% endif %}
+- **[CASSE]**
+{%- if not front_js %} Classes Python en PascalCase ; fonctions et variables Python en snake_case ;
+  constantes en `UPPER_SNAKE_CASE`.{% endif %}
+{%- if front_js %} Composants {{ {'nuxt': 'Vue', 'next': 'React', 'astro': 'Astro'}[frontend] }} en PascalCase préfixé par le domaine (`ChartLegend`,
+  `MapTooltip`) ;
+{%- if back_py or front_py %} classes Python en PascalCase ; fonctions et variables Python en snake_case ;
+  constantes{% else %} constantes{% endif %} en `UPPER_SNAKE_CASE`.{% endif %}
 
 ### Valeurs magiques
 - **[ZERO-MAGIE]** Pas de littéral métier en dur (statut, rôle, seuil, délai, prix, couleur,
-  nom de colonne répété) : constantes dans `utils/constants.ts` ou enums TypeScript côté
-  frontend ; `TextChoices` / `IntegerChoices` ou constante nommée en tête de module côté
-  backend. Ne sont pas magiques : `0`, `1`, `-1`, `""`, `None`, les index et les littéraux des
+  nom de colonne répété) :
+{%- if front_js %} constantes dans `{{ {'nuxt': 'app/utils/constants.ts', 'next': 'lib/constants.ts', 'astro': 'src/constants.ts'}[frontend] }}` ou enums TypeScript côté
+  frontend ;{% endif %}
+{%- if backend == 'django' %} `TextChoices` / `IntegerChoices` ou constante nommée en tête de module côté
+  backend.{% else %} `enum.StrEnum` ou constante nommée en tête de module en Python.{% endif %} Ne sont pas magiques : `0`, `1`, `-1`, `""`, `None`, les index et les littéraux des
   tests.
 
 ### Argent, dates, données personnelles, secrets
 - **[ARGENT]** Tout montant est un **entier en centimes** (`*_cents`), dans la base, l'API et
   le front. Jamais de `float` pour de l'argent ; conversion en euros uniquement à l'affichage.
-- **[FUSEAU]** Stockage en UTC (`USE_TZ = True`). Toute notion calendaire — « aujourd'hui »,
-  jour, mois, bornes d'une période — se calcule en `Europe/Paris` (`timezone.localdate()`),
+- **[FUSEAU]** Stockage en UTC{{ ' (`USE_TZ = True`)' if backend == 'django' }}. Toute notion calendaire — « aujourd'hui »,
+  jour, mois, bornes d'une période — se calcule en `Europe/Paris` ({{ '`timezone.localdate()`' if backend == 'django' else '`ZoneInfo("Europe/Paris")`' }}),
   jamais par `.date()` sur un instant UTC.
 - **[DONNEES-PERSO]** Aucune donnée personnelle (e-mail, nom, téléphone, pièce, IP complète)
   dans les logs, les messages d'erreur, les URL, les clés de cache ou les figures : on
   journalise l'identifiant (`user_id`), pas la personne. Toute nouvelle donnée personnelle
   stockée est couverte par l'export et l'anonymisation RGPD dans le même lot.
+{%- set secrets_back = {'django': '`python-decouple` côté backend', 'fastapi': '`pydantic-settings` côté backend', 'data': '`python-decouple` côté backend'}.get(backend) %}
+{%- set secrets_front = {'nuxt': '`runtimeConfig` côté frontend', 'next': 'variables serveur côté frontend (jamais `NEXT_PUBLIC_` pour un secret)', 'astro': '`astro:env` côté frontend', 'streamlit': '`st.secrets` côté frontend', 'dash': '`python-decouple` côté frontend'}.get(frontend) %}
 - **[SECRETS]** Aucun secret dans le code ni dans le dépôt : tout passe par l'environnement
-  (`python-decouple` côté backend, `runtimeConfig` côté frontend). Un secret commis par erreur
+  ({{ [secrets_back, secrets_front] | select | join(', ') }}). Un secret commis par erreur
   est considéré compromis et changé.
 
 ### Erreurs
@@ -109,22 +146,31 @@ casserait le contrat ([CONTRAT-FIGE]) ; on ne le fait qu'en ouvrant une nouvelle
   capture générique (`except Exception`) qui ne la relance pas ou ne la journalise pas.
 
 ---
+{% if front_label %}
+## 2. Frontend ({{ front_label }})
 
-## 2. Frontend (Nuxt et Vue 3)
-
+{% if frontend == 'nuxt' -%}
 Dans [`frontend/CLAUDE.md`](frontend/CLAUDE.md) : code ([TS-STRICT] à [ACCESSIBILITE]) et
 stylage ([STYLE-1] à [STYLE-5], isolats CSS).
+{%- else -%}
+Dans [`frontend/CLAUDE.md`](frontend/CLAUDE.md) : règles propres à {{ front_label }}.
+{%- endif %}
 
 ---
+{% endif %}
+{%- if back_label %}
+## 3. Backend ({{ back_label }})
 
-## 3. Backend (Django et Django Ninja)
-
+{% if backend == 'django' -%}
 Dans [`backend/CLAUDE.md`](backend/CLAUDE.md) : socle ([TYPAGE] à [FICHIERS]) et piliers I à XV
 (couches, persistance, contrats, sécurité, erreurs, domaine, concurrence, observabilité,
 évolution de l'API, tests, migrations, outbox, cache, cryptographie, contrat front/back).
+{%- else -%}
+Dans [`backend/CLAUDE.md`](backend/CLAUDE.md) : règles propres à {{ back_label }}.
+{%- endif %}
 
 ---
-
+{% endif %}
 ## 4. Standards 2026
 
 Régime **revue** tant qu'aucun contrôle ne les vérifie ; chacun a vocation à passer en cliquet
@@ -136,13 +182,14 @@ puis en strict.
   échoue si le lockfile dérive.
 - **[IMAGES-PAR-EMPREINTE]** Toute image de base de conteneur est épinglée par empreinte
   `@sha256:`, jamais par un tag mobile seul.
-- **[AUDIT-VULNERABILITES]** La CI audite les dépendances à chaque commit (`pip-audit` / `uv`
-  côté backend, `pnpm audit --audit-level=high` côté frontend) ; une vulnérabilité haute ou
+- **[AUDIT-VULNERABILITES]** La CI audite les dépendances à chaque commit (`uv audit` pour
+  chaque projet Python, `pnpm audit --audit-level=high` pour un front pnpm) ; une vulnérabilité haute ou
   critique bloque la fusion, sauf dérogation datée et justifiée.
 - **[NOUVELLE-DEPENDANCE]** Ajouter une dépendance se justifie dans le commit : maintenue
   (release de moins d'un an), licence compatible, pas d'équivalent déjà présent, pas de nom
-  proche d'un paquet connu (typosquatting). Les montées de version passent par Dependabot, une
-  par PR.
+  proche d'un paquet connu (typosquatting). Les montées de version passent par `kiln update`
+  (compatibles par défaut, majeures par `kiln update --major`, contrôles à la suite), une PR par
+  passage ; Dependabot ne propose que les correctifs de sécurité (amendé le 9 octobre 2026).
 - **[SBOM]** Chaque image déployée produit sa nomenclature logicielle (CycloneDX ou SPDX),
   conservée avec la release.
 
@@ -168,15 +215,17 @@ puis en strict.
 
 ### Observabilité
 - **[OPENTELEMETRY]** Traces distribuées OpenTelemetry (propagation W3C `traceparent`) de la
-  requête du frontend jusqu'à l'outbox et aux API tierces ; le `X-Request-ID` ([CORRELATION])
-  en est l'attribut de corrélation.
+  requête jusqu'aux traitements de fond et aux API tierces
+{%- if api %} ; le `X-Request-ID` ([CORRELATION])
+  en est l'attribut de corrélation{% endif %}.
 - **[SLO]** Chaque parcours critique a un objectif de niveau de service chiffré
   (disponibilité, latence p95) et un budget d'erreur. Un budget épuisé gèle les
   fonctionnalités au profit de la fiabilité.
 - **[ALERTE-SUR-SYMPTOME]** On alerte sur ce que l'utilisateur subit (taux d'erreur, latence,
-  file d'outbox qui grossit), pas sur des causes internes (CPU, mémoire).
+  file de traitements qui grossit), pas sur des causes internes (CPU, mémoire).
 
 ### Performance
+{%- if front_js %}
 - **[CORE-WEB-VITALS]** Budgets au 75ᵉ centile, sur mobile : **LCP < 2,5 s**, **INP < 200 ms**,
   **CLS < 0,1**. Une régression au-delà bloque la release.
 - **[BUDGET-JS]** Budget de JavaScript par page, vérifié à la construction ; toute bibliothèque
@@ -184,30 +233,48 @@ puis en strict.
   dynamique).
 - **[IMAGES-MODERNES]** Images en AVIF/WebP, dimensionnées (`width`/`height` explicites),
   chargées en différé hors du premier écran.
+{%- endif %}
 - **[LATENCE-API]** p95 < 300 ms pour une route de lecture ; une route plus lente se justifie ou
-  passe par le cache ([STAMPEDE]).
+  passe par le cache{{ ' ([STAMPEDE])' if backend == 'django' }}.
 
 ### Tests
+{%- if api %}
 - **[FUZZING-API]** L'API est fuzzée depuis son contrat OpenAPI (`schemathesis`) : aucune
   entrée conforme au schéma ne provoque de 500.
+{%- endif %}
 - **[TESTS-PROPRIETES]** Les calculs à invariants — agrégations, bornes de période, totaux,
   pourcentages — ont des tests par propriétés (`hypothesis`) en plus des exemples.
 - **[TESTS-MUTATION]** Les modules de calcul critiques passent périodiquement au test par
   mutation (`mutmut`) : un mutant qui survit est un test manquant.
+{%- if front_label %}
 - **[E2E-PARCOURS]** Les parcours critiques ont un test de bout en bout Playwright, joué en CI
   contre une pile complète.
+{%- endif %}
+{%- if front_js %}
 - **[ACCESSIBILITE-AUTO]** Les pages principales passent un contrôle `axe-core` automatisé ;
   cible **WCAG 2.2 niveau AA**.
+{%- endif %}
 
-### Python et TypeScript
+### {{ 'Python et TypeScript' if front_js else 'Python' }}
 - **[PYTHON-MODERNE]** Syntaxe Python 3.12+ : génériques PEP 695 (`def first[T](...)`,
   `type Alias = ...`), `X | None` plutôt que `Optional[X]`, `@override` sur toute surcharge,
   `match` pour les aiguillages sur des statuts, `Self` pour les retours chaînés.
 - **[TYPAGE-STRICT]** mypy `strict` sur tout nouveau module ; aucun `# type: ignore` sans code
   d'erreur précis et raison.
+{%- if frontend == 'nuxt' %}
 - **[VUE-MODERNE]** API Vue 3.5 / Nuxt 4 : `defineModel()` pour le `v-model`,
   `useTemplateRef()` pour les références, props déstructurées réactives, `useFetch` /
   `useAsyncData` avec une clé explicite. Pas d'Options API.
+{%- elif frontend == 'next' %}
+- **[REACT-MODERNE]** React 19 / Next.js 16 (App Router) : composants serveur par défaut,
+  `"use client"` seulement pour l'interaction, actions serveur pour les mutations, `use()` et
+  `Suspense` pour l'asynchrone. Jamais de composant classe, jamais de `useEffect` pour charger
+  des données.
+{%- elif frontend == 'astro' %}
+- **[ASTRO-MODERNE]** Astro 7 : rendu statique par défaut, îlots (`client:*`) seulement pour
+  l'interaction et justifiés, collections de contenu typées par schéma, `astro:env` pour la
+  configuration.
+{%- endif %}
 - **[VALIDATION-AUX-FRONTIERES]** Toute donnée qui entre (API tierce, fichier source,
   `localStorage`, paramètre d'URL) est validée par un schéma à l'exécution avant usage : le
   type TypeScript ne protège que ce que le compilateur voit.
@@ -216,7 +283,7 @@ puis en strict.
 - **[FEATURE-FLAGS]** Une fonctionnalité risquée se livre éteinte derrière un drapeau, puis
   s'active sans redéploiement. Un drapeau a une date de retrait ; au-delà, il est supprimé.
 - **[DEPLOIEMENT-REVERSIBLE]** Tout déploiement est annulable en une commande, sans perte de
-  données : un déploiement qui migre le schéma ([MIGRATIONS]) se défait en restaurant la
+  données : un déploiement qui migre le schéma{{ ' ([MIGRATIONS])' if api }} se défait en restaurant la
   sauvegarde d'avant bascule.
 - **[CI-RAPIDE]** La CI complète tient en moins de 10 minutes ; un test instable est mis en
   quarantaine et corrigé dans la semaine, jamais relancé jusqu'à ce qu'il passe.
@@ -224,13 +291,13 @@ puis en strict.
 ### Développement assisté par IA
 - **[IA-RESPONSABLE]** Le code produit par un agent obéit à la même charte et à la même
   relecture que le code humain ; celui qui fusionne en répond.
-- **[IA-CONTEXTE]** Les trois fichiers de la charte sont le contexte de référence des agents :
+- **[IA-CONTEXTE]** Les {{ 'trois' if back_label and front_label else 'deux' }} fichiers de la charte sont le contexte de référence des agents :
   une règle que l'agent enfreint régulièrement est une règle mal écrite, à reformuler là où elle
   vit.
 - **[IA-CONFIDENTIALITE]** Aucun secret, aucune donnée personnelle réelle n'est collée dans une
   conversation avec un agent ; on travaille sur des données de test ou publiques.
 - **[IA-FONCTIONNALITE]** Toute fonctionnalité qui appelle un modèle de langage passe par
-  l'outbox ou une file ([HORS-REQUETE]), borne son coût par appel, journalise modèle et jetons
+  une file{{ ' ([HORS-REQUETE])' if api }}, borne son coût par appel, journalise modèle et jetons
   consommés, et ne laisse jamais le texte généré déclencher une action sans validation
   (injection de consignes).
 

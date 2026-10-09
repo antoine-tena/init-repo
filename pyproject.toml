@@ -4,7 +4,7 @@ version = "0.2.0"
 description = "Orchestrateur de repos : génère un projet, règle ses paramètres et le tient à jour"
 readme = "README.md"
 requires-python = ">=3.14"
-dependencies = ["copier>=9.4,<10"]
+dependencies = ["copier>=9.4,<10", "packaging>=24"]
 
 [project.scripts]
 kiln = "kiln.cli:main"
@@ -23,6 +23,8 @@ testpaths = ["tests"]
 [tool.ruff]
 line-length = 100
 target-version = "py314"
+# Les fichiers du modèle sont vérifiés dans les projets générés (tests et kiln check).
+extend-exclude = ["template"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "N", "UP", "B", "SIM", "RUF", "ANN"]

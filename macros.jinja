@@ -1,0 +1,10 @@
+{#- Chaîne Python telle que ruff la formate : guillemets doubles, sauf s'ils demandent plus
+    d'échappements que des simples. -#}
+{%- macro py_str(texte) -%}
+{%- set echappe = texte | replace('\\', '\\\\') -%}
+{%- if texte.count('"') > texte.count("'") -%}
+'{{ echappe | replace("'", "\\'") }}'
+{%- else -%}
+"{{ echappe | replace('"', '\\"') }}"
+{%- endif -%}
+{%- endmacro -%}

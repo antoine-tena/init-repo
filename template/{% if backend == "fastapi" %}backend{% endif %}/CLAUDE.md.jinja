@@ -1,0 +1,108 @@
+# Backend — charte
+
+Section 3 de la charte {{ titre }}, chargée quand on travaille dans `backend/`. Le mode d'emploi
+(identifiants, régimes, hiérarchie), les règles communes (§1), les standards 2026 (§4) et Git
+(§5) sont dans le `CLAUDE.md` de la racine.
+
+## 3. Backend (FastAPI)
+
+Lancer : `uv run uvicorn app.main:app --reload` (ou `kiln dev`). Vérifier : `kiln check`.
+
+### Socle
+- **[TYPAGE]** Annotations de type sur toutes les signatures (paramètres et retour), vérifiées
+  par mypy strict (plugin Pydantic). `Any` n'est admis qu'à une frontière non typée (payload
+  brut d'une API tierce) ; partout ailleurs : `TypedDict`, `Protocol`, union ou générique.
+- **[ROUTEURS]** Une route se déclare sur un `APIRouter` de son domaine (`app/<domaine>/api.py`),
+  monté sous `/api` par `create_app()`. Pas de route sur l'objet `app` lui-même.
+- **[SCHEMAS]** Entrées **et sorties** typées par des modèles Pydantic (`response_model` ou type
+  de retour). Pas de `await request.json()`, pas de dictionnaire de réponse fait à la main — y
+  compris pour un simple accusé.
+- **[PERMISSIONS]** Chaque route déclare son authentification par une dépendance
+  (`Depends(current_user)`) et sa permission. Une route publique le dit dans un commentaire et
+  le justifie ; jamais d'opération sensible sans authentification.
+- **[ROUTE-PUBLIQUE]** Toute route accessible sans authentification (connexion, inscription,
+  contact) est limitée en débit et ne révèle pas si un compte existe.
+- **[PAGINATION]** Une route qui renvoie une liste de taille non bornée est paginée, avec une
+  taille de page maximale côté serveur et un schéma commun (`results`, `count`, `page`,
+  `page_size`, `has_next`).
+- **[FICHIERS]** Tout fichier téléversé est validé côté serveur (type réel lu dans le contenu,
+  taille maximale) et servi sous un nom généré — jamais le nom fourni par l'utilisateur.
+
+### Pilier I — Isolation des couches
+- **[VUE-15]** La route est un maître d'hôtel : elle reçoit la requête, vérifie identité et
+  permission (dépendances), délègue au service et renvoie la réponse. Aucun calcul, aucun
+  `if/else` métier, aucune requête SQL. **Au-delà de 15 lignes, une route est défectueuse**
+  (cliquet).
+- **[DEPENDANCES]** Session de base, utilisateur courant et réglages arrivent par `Depends`,
+  jamais par une variable globale importée dans un service.
+
+### Pilier II — Persistance (quand une base est ajoutée)
+- **[ORM]** SQLAlchemy 2 typé (`Mapped[...]`, `mapped_column`), sessions courtes ouvertes par
+  une dépendance. Pas de SQL construit par concaténation.
+- **[N+1]** Toute relation parcourue est préchargée (`selectinload`, `joinedload`) ; aucune
+  requête implicite dans une boucle.
+- **[INDEX]** Toute combinaison de champs fréquemment filtrée ou triée a son index composite.
+
+### Pilier III — Contrats
+- **[ENTREES]** Payloads entrants validés par un modèle Pydantic strict, jamais lus bruts.
+- **[RETOURS]** Une fonction qui renvoie plusieurs valeurs renvoie une `dataclass(frozen=True)`
+  ou un modèle, pas un tuple.
+
+### Pilier IV — Sécurité
+- **[HORS-REQUETE]** E-mail, génération de fichier, appel à une API tierce sortent du cycle de
+  la requête : file de traitements (tâche de fond persistée), jamais `BackgroundTasks` pour un
+  effet de bord qui doit survivre à un redémarrage.
+- **[TEMPS-CONSTANT]** Toute vérification de jeton, clé ou secret se fait par
+  `secrets.compare_digest(a, b)`, jamais par `==` / `!=`.
+- **[CHIFFREMENT]** Les données très sensibles sont chiffrées dans la couche Python, par une clé
+  gérée hors du dépôt, avant d'atteindre la base.
+
+### Pilier V — Erreurs sémantiques
+- **[ERREURS]** Toute exception métier dérive d'une exception de base unique, porte un code
+  machine en `UPPER_SNAKE_CASE`, et est traduite par un gestionnaire d'exceptions central au
+  format `{"status": "fail", "code": …, "message": …, "timestamp": …, "meta": {…}}`. Le
+  `message` s'adresse à l'utilisateur, en français ; aucun détail technique ne sort en
+  production.
+
+### Pilier VI — Domaine
+- **[SERVICES]** Tout traitement métier vit dans un service (`app/<domaine>/services.py`).
+- **[DOMAINE-HERMETIQUE]** Aucun objet HTTP (`Request`, `Response`) n'entre dans la couche
+  service : la route extrait, valide et passe des structures pures.
+- **[TRANSACTIONS]** Toute écriture touchant plus d'une ligne ou d'une table se fait dans une
+  transaction (`with session.begin():`), au périmètre le plus court.
+
+### Pilier VII — Concurrence
+- **[VERROUS]** Compteurs, paiements, places : verrouillage pessimiste
+  (`with_for_update(nowait=True)` ou `skip_locked=True`) ou mise à jour conditionnelle, jamais
+  lecture-calcul-écriture en Python.
+
+### Pilier VIII — Observabilité
+- **[JOURNALISATION]** `print()` et `logging.getLogger` sont bannis : `structlog`, un nom
+  d'événement stable `domaine.evenement` et des champs (`logger.info("order.paid",
+  order_id=…)`), jamais une phrase formatée. Chaque événement porte l'action et l'utilisateur
+  sous `user_id` (identifiant, voir [DONNEES-PERSO]).
+- **[CORRELATION]** Chaque requête reçoit ou hérite d'un `X-Request-ID`, injecté dans chaque log
+  et chaque appel sortant ; les tâches de fond portent un `job_id` équivalent.
+
+### Pilier IX — Évolution de l'API
+- **[CONTRAT-FIGE]** Une fois en production, la signature d'une route (entrée et sortie) est
+  figée. Tout changement destructif ouvre une nouvelle version (`/api/v2/`). Ajouter un champ
+  optionnel n'est pas destructif.
+- **[DEPRECATION]** Une route ou un champ obsolète renvoie les en-têtes `Deprecation` et
+  `Sunset`.
+- **[OPENAPI]** Le schéma (`/api/openapi.json`) est exporté et versionné à chaque changement
+  d'API quand un front en dérive ses types ([DERIVE] : la CI échoue si l'un dérive de l'autre).
+
+### Pilier X — Tests
+- **[TESTS]** Toute route a ses tests (`TestClient`), tout service les siens.
+- **[HORLOGE]** Pas d'horloge réelle dans un test lié à une date : horloge injectée ou figée.
+- **[RESEAU]** Aucun test n'émet de requête réseau réelle : tout appel sortant est simulé.
+- **[NON-REGRESSION]** Toute correction de bug arrive avec le test qui l'aurait détectée.
+- **[TESTS-PERMISSIONS]** Toute route protégée a au moins un test qui vérifie le refus
+  (`401` anonyme, `403` rôle insuffisant).
+
+### Pilier XI — Migrations (quand une base est ajoutée)
+- **[MIGRATIONS]** Tout changement de modèle arrive avec sa migration Alembic, générée puis
+  relue. Une migration fusionnée dans `main` ne se modifie ni ne se supprime plus : on corrige
+  par une migration suivante. Supprimer ou renommer une colonne encore lue se fait en deux
+  livraisons.

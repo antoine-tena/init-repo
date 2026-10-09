@@ -1,0 +1,56 @@
+# --- Secrets : seul le modèle sans valeur réelle est suivi ---
+.env
+.env.*
+!.env.example
+# Modèle de .env.example dans le dépôt kiln.
+!.env.example.jinja
+*.pem
+*.key
+*.p12
+
+# --- Claude Code : réglages personnels (le .claude/settings.json reste partagé) ---
+.claude/settings.local.json
+.claude/worktrees/
+CLAUDE.local.md
+
+# --- Journaux ---
+*.log
+logs/
+
+# --- Éditeurs ---
+.idea/
+*.swp
+
+# --- Système ---
+.DS_Store
+Thumbs.db
+*:Zone.Identifier
+
+{%- set python_dirs = (['backend'] if backend in ['django', 'fastapi', 'data'] else []) + (['frontend'] if frontend in ['streamlit', 'dash'] else []) %}
+{%- if python_dirs %}
+# --- Python ({{ python_dirs | join(', ') }}) ---
+__pycache__/
+*.py[cod]
+.venv/
+coverage.xml
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+{%- endif %}
+{%- if backend == 'django' %}
+backend/db.sqlite3
+{%- endif %}
+{%- if backend == 'data' %}
+
+# --- Données : brutes et intermédiaires hors du dépôt ([DONNEES-LOURDES]) ---
+backend/data/raw/
+backend/data/interim/
+backend/__marimo__/
+{%- endif %}
+{%- if podman %}
+
+# --- Conteneurs : volumes locaux ---
+.podman/
+{%- endif %}

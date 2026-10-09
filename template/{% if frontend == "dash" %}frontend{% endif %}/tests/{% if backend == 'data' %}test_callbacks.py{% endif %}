@@ -1,0 +1,22 @@
+import polars as pl
+
+from dashboard.callbacks import totals_for_category, update_totals_graph
+from dashboard.constants import ALL_CATEGORIES
+
+
+def test_all_categories_keeps_every_row() -> None:
+    totals = pl.DataFrame({"category": ["nord", "sud"], "total": [1.0, 2.0]})
+
+    assert totals_for_category(totals, ALL_CATEGORIES).height == 2
+
+
+def test_one_category_filters_rows() -> None:
+    totals = pl.DataFrame({"category": ["nord", "sud"], "total": [1.0, 2.0]})
+
+    assert totals_for_category(totals, "sud")["total"].to_list() == [2.0]
+
+
+def test_graph_has_one_trace_for_one_category() -> None:
+    figure = update_totals_graph("nord")
+
+    assert len(figure.data) == 1

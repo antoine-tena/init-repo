@@ -1,0 +1,21 @@
+"""[APPELS-API] : seul point d'appel du backend ; les pages passent par ces fonctions."""
+
+import os
+
+import httpx
+
+from dashboard.constants import API_URL_VARIABLE, DEFAULT_API_URL, HEALTH_TIMEOUT_SECONDS
+
+
+def fetch_health_status() -> str | None:
+    """Statut de la sonde de santé, ou None si le backend est injoignable ou répond mal."""
+    api_url = os.environ.get(API_URL_VARIABLE, DEFAULT_API_URL)
+    try:
+        response = httpx.get(f"{api_url}/api/health", timeout=HEALTH_TIMEOUT_SECONDS)
+    except httpx.HTTPError:
+        # [EXCEPTIONS] : backend injoignable, affiché comme tel par la page.
+        return None
+    payload = response.json() if response.is_success else None
+    # [VALIDATION-AUX-FRONTIERES] : la réponse est vérifiée avant usage.
+    status = payload.get("status") if isinstance(payload, dict) else None
+    return status if isinstance(status, str) else None

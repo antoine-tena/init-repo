@@ -1,0 +1,76 @@
+# Règles impératives de CLAUDE.md vérifiées par la commande `charte` (installée avec kiln) :
+# après chaque édition (hook Claude), avant chaque commit (pre-commit) et en CI.
+# Interdictions : respectées partout. Cliquets : le passif est un plafond qui ne fait que
+# baisser. Planchers : une valeur qui ne fait que monter. Valeurs : `charte --detail`.
+{%- set python_files = (['backend/*.py', 'backend/**/*.py'] if backend in ['django', 'fastapi', 'data'] else []) + (['frontend/*.py', 'frontend/**/*.py'] if frontend in ['streamlit', 'dash'] else []) %}
+{%- set front_files = {'nuxt': ['frontend/app/**'], 'next': ['frontend/app/**', 'frontend/components/**', 'frontend/lib/**'], 'astro': ['frontend/src/**']}.get(frontend, []) %}
+
+exclus = ["/migrations/", "/notebooks/"]
+regles_non_verifiees = "scripts/ci/charte-non-verifiee.txt"
+{%- if python_files %}
+
+[interdictions.journalisation]
+id = "JOURNALISATION"
+fichiers = {{ python_files | tojson }}
+
+[interdictions.temps-constant]
+id = "TEMPS-CONSTANT"
+fichiers = {{ python_files | tojson }}
+
+[interdictions.donnees-perso]
+id = "DONNEES-PERSO"
+fichiers = {{ python_files | tojson }}
+{%- endif %}
+{%- if backend == 'django' %}
+
+[interdictions.signaux-django]
+id = "SIGNAUX"
+
+[interdictions.migrations-django]
+id = "MIGRATIONS"
+branche = "main"
+{%- endif %}
+{%- if frontend == 'nuxt' %}
+
+[interdictions.style-vue]
+id = "STYLE-1"
+{%- endif %}
+
+[cliquets.taille-fichier]
+id = "TAILLE-FICHIER"
+fichiers = {{ (python_files + front_files) | tojson }}
+suffixes = [".py", ".ts", ".tsx", ".vue", ".astro", ".css", ".mjs"]
+budget = 0
+{%- if backend in ['django', 'fastapi'] %}
+
+[cliquets.routes-longues]
+id = "VUE-15"
+{%- if backend == 'django' %}
+decorateur = '\s*@\w*(api|router)\.(get|post|put|patch|delete)'
+fichiers = ["backend/**/api.py", "backend/**/api/*.py"]
+{%- else %}
+decorateur = '\s*@\w*(app|router)\.(get|post|put|patch|delete)'
+fichiers = ["backend/app/**/*.py"]
+{%- endif %}
+budget = 0
+{%- endif %}
+{%- if backend == 'django' %}
+
+[cliquets.verrous-django]
+id = "VERROUS"
+budget = 0
+
+# Lus par le workflow django.yml (`charte types`, `charte couverture`) ; les autres projets Python
+# lancent mypy et pytest --cov-fail-under directement (workflow python.yml, `kiln check`).
+[types]
+dossier = "backend"
+paquets = ["config", "tests"]
+budget = 0
+env = { DJANGO_SECRET_KEY = "charte-types" }
+
+[couverture]
+rapport = "backend/coverage.xml"
+planchers = { TOTAL = 80 }
+# Le socle généré est couvert à 100 % : ne suggérer de relever le plancher qu'au-delà.
+marge = 25
+{%- endif %}

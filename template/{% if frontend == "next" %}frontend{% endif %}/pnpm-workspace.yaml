@@ -1,0 +1,7 @@
+# Scripts d'installation des dépendances : refusés, les binaires précompilés suffisent.
+allowBuilds:
+  sharp: false
+  unrs-resolver: false
+
+# Versions exactes dans package.json, y compris après `kiln update` ([DEPENDANCES-FIGEES]).
+saveExact: true

@@ -1,0 +1,27 @@
+"""[CALLBACKS] : fonctions pures, typées, qui reçoivent les valeurs des composants."""
+
+import plotly.graph_objects as go
+import polars as pl
+from dash import Input, Output, callback
+from pipeline.figures import monthly_totals_figure
+from pipeline.sources import load_measurements
+from pipeline.transforms import monthly_totals
+
+from dashboard.constants import ALL_CATEGORIES, CATEGORY_DROPDOWN_ID, TOTALS_GRAPH_ID
+
+
+def totals_for_category(totals: pl.DataFrame, category: str) -> pl.DataFrame:
+    if category == ALL_CATEGORIES:
+        return totals
+    return totals.filter(pl.col("category") == category)
+
+
+def update_totals_graph(category: str) -> go.Figure:
+    totals = monthly_totals(load_measurements())
+    return monthly_totals_figure(totals_for_category(totals, category))
+
+
+def register() -> None:
+    callback(Output(TOTALS_GRAPH_ID, "figure"), Input(CATEGORY_DROPDOWN_ID, "value"))(
+        update_totals_graph
+    )

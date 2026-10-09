@@ -1,0 +1,29 @@
+{% if backend in ['django', 'fastapi'] -%}
+import pytest
+{% endif -%}
+from dash import html
+
+from dashboard.constants import SITE_TITLE
+from dashboard.layout import build_layout, create_app
+{% if backend in ['django', 'fastapi'] %}
+
+def test_layout_reports_unreachable_backend(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("dashboard.layout.fetch_health_status", lambda: None)
+
+    layout = build_layout()
+
+    assert isinstance(layout.children[0], html.H1)
+    assert layout.children[0].children == SITE_TITLE
+    assert "ne répond pas" in layout.children[2].children
+{%- else %}
+
+def test_layout_starts_with_title() -> None:
+    layout = build_layout()
+
+    assert isinstance(layout.children[0], html.H1)
+    assert layout.children[0].children == SITE_TITLE
+{%- endif %}
+
+
+def test_app_uses_layout_function() -> None:
+    assert create_app().layout is build_layout

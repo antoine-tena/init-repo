@@ -1,0 +1,17 @@
+import { connection } from "next/server";
+
+import { getHealth } from "@/lib/api";
+
+// Composant serveur ([REACT-MODERNE]) : l'état de l'API est lu à chaque requête, sans useEffect.
+export default async function HealthStatus() {
+  await connection();
+  const health = await getHealth();
+  if (health === null) {
+    return (
+      <p className="text-red-700">
+        Le backend ne répond pas : lancez-le avec <code>kiln dev</code>.
+      </p>
+    );
+  }
+  return <p className="text-green-700">Backend joignable (statut : {health.status}).</p>;
+}

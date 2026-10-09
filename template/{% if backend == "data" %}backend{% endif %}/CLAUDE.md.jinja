@@ -1,0 +1,53 @@
+# Backend — charte
+
+Section 3 de la charte {{ titre }}, chargée quand on travaille dans `backend/`. Le mode d'emploi
+(identifiants, régimes, hiérarchie), les règles communes (§1), les standards 2026 (§4) et Git
+(§5) sont dans le `CLAUDE.md` de la racine.
+
+## 3. Backend (données Python : polars, marimo, Plotly)
+
+Explorer : `uv run marimo edit notebooks` (ou `kiln dev`). Vérifier : `kiln check`.
+
+### Chaîne de données
+- **[PIPELINE]** Toute donnée suit la même chaîne, un module par étape : `pipeline/sources.py`
+  charge et valide, `pipeline/transforms.py` transforme, `pipeline/figures.py` trace. Une étape
+  n'appelle jamais celle d'avant : elle reçoit son entrée en paramètre.
+- **[FONCTIONS-PURES]** Une transformation reçoit un `DataFrame` et en renvoie un nouveau : pas
+  de lecture de fichier, pas d'écriture, pas d'état global. Elle se teste donc sans disque.
+- **[POLARS]** polars par défaut, en expressions (`pl.col(...)`) et en mode paresseux
+  (`scan_*`, `.lazy()`) dès que le volume le justifie. pandas seulement quand une bibliothèque
+  l'impose, converti à la frontière (`to_pandas()` au dernier moment).
+- **[SCHEMA-DONNEES]** Chaque jeu chargé est validé à la frontière ([VALIDATION-AUX-FRONTIERES]) :
+  colonnes et types attendus déclarés dans un `pl.Schema`, échec explicite
+  (`DatasetSchemaError`) si le fichier change de forme — le chargement échoue, pas la figure.
+
+### Données
+- **[SOURCES]** Chaque jeu de données a sa source (lien, date de récupération, licence) notée
+  dans `data/README.md`.
+- **[DONNEES-LOURDES]** `data/raw/` et `data/interim/` sont hors du dépôt ; seul ce qui est petit
+  et reproductible est commité (`data/sample/`). Un jeu brut se récupère par une fonction de
+  `pipeline/sources.py`, jamais par un téléchargement à la main non décrit.
+- **[REPRODUCTIBLE]** Une figure se régénère par une commande depuis les données sources ;
+  aucune retouche à la main d'un fichier généré. Tout tirage aléatoire prend une graine fixée.
+- **[DONNEES-PERSO]** Aucune donnée personnelle réelle dans le dépôt ni dans une figure : on
+  anonymise ou on agrège avant.
+
+### Notebooks
+- **[NOTEBOOKS]** Les notebooks sont des fichiers marimo (`notebooks/*.py`), lisibles dans un
+  diff. Un notebook explore ; le code qui produit une figure livrée vit dans `pipeline/`, que le
+  notebook importe. Pas de fonction de plus de [TAILLE-FONCTION] dans une cellule.
+
+### Figures
+- **[FIGURES]** Une fonction par figure dans `pipeline/figures.py`, qui reçoit des données déjà
+  transformées et renvoie une `go.Figure` Plotly : titre, axes titrés avec leur unité.
+- **[FIGURES-ACCESSIBLES]** Palette lisible par les daltoniens (`COLORBLIND_PALETTE`), jamais
+  l'information portée par la seule couleur, texte alternatif pour toute figure publiée.
+
+### Socle
+- **[TYPAGE]** Annotations de type sur toutes les signatures, vérifiées par mypy strict.
+- **[JOURNALISATION]** Pas de `print()` dans `pipeline/` : le résultat d'une étape est sa valeur
+  de retour ; un journal, s'il en faut un, passe par `structlog`.
+- **[TESTS]** Toute fonction de `pipeline/` a ses tests, sur de petits `DataFrame` écrits dans le
+  test ; les cas limites (vide, valeur manquante, type inattendu) compris.
+- **[NON-REGRESSION]** Toute correction de bug arrive avec le test qui l'aurait détectée.
+- **[RESEAU]** Aucun test ne télécharge de données.
