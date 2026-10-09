@@ -1,0 +1,65 @@
+# Frontend — charte
+
+Section 2 de la charte {{ titre }}, chargée quand on travaille dans `frontend/`. Le mode d'emploi
+(identifiants, régimes, hiérarchie), les règles communes (§1), les standards 2026 (§4) et Git
+(§5) sont dans le `CLAUDE.md` de la racine.
+
+## 2. Frontend (Nuxt et Vue 3)
+
+### Code
+- **[TS-STRICT]** TypeScript strict sur tous les `.ts` et `<script setup lang="ts">`.
+- **[ZERO-ANY]** Zéro `any` : `unknown` puis un rétrécissement de type.
+- **[ASYNC]** `async/await` avec `try/catch` uniquement ; chaînes `.then().catch()` interdites.
+- **[IMPORTS-EXPLICITES]** Les composants du projet sont importés explicitement
+  (`import UiButton from '~/components/ui/UiButton.vue'`) : leur import automatique est coupé
+  dans `nuxt.config.ts`. Seuls ceux de Nuxt (`NuxtLink`, `NuxtImg`, `ClientOnly`…) restent
+  automatiques.
+- **[APPELS-API]** Les composants et les pages n'appellent jamais l'API directement : ils
+  passent par un composable du domaine, qui passe par `useApi()`, dont les routes, corps et
+  réponses sont typés par `openapi.json`. Pas de `$fetch` ni de `useApi()` dans un `.vue`
+  (règle ESLint).
+- **[ETATS-UI]** Tout écran qui charge des données traite explicitement les trois états :
+  chargement, erreur (message compréhensible, jamais « Erreur. » seul) et liste vide.
+- **[ACCESSIBILITE]** Chaque champ a un `<label>` associé, chaque bouton-icône un
+  `aria-label`, chaque image informative un `alt`. Tout est utilisable au clavier et le focus
+  reste visible.
+
+### Stylage
+- **[STYLE-1]** Aucune balise `<style>` ni `<style scoped>` dans un fichier `.vue` (composants
+  comme pages) : un `.vue` ne contient que du balisage (classes utilitaires) et du TypeScript.
+- **[STYLE-2]** **Tailwind par défaut (95 % des cas)**, directement dans le template : mise en
+  page et dimensions, fonds, textes, bordures, arrondis, ombres, typographie, états
+  interactifs (`hover:`, `focus:`, `disabled:`, `active:`), points de rupture (`sm:` à `xl:`).
+  **CSS déporté par exception (5 %)**, obligatoire dès que l'un de ces critères est rempli :
+  - animation à étapes (tout `@keyframes`) ;
+  - élément natif du navigateur (`::-webkit-scrollbar`, rail sans barre, curseurs) ;
+  - composant tiers boîte noire dont le HTML n'est pas modifiable (graphique ou carte rendus
+    par une bibliothèque : infobulles, légendes). Le projet n'embarque aucune bibliothèque de
+    composants : `components/` est écrit ici et suit les règles des composants internes ;
+  - chaîne de classes illisible qui contourne le moteur ([STYLE-5]).
+- **[STYLE-3]** `app/assets/css/main.css` est le seul fichier référencé par `nuxt.config.ts`.
+  Il importe Tailwind, puis `tokens.css` — **seule définition des jetons de thème** (`@theme`,
+  `:root` : polices, couleurs, palettes des graphiques, tailles, interlettrages, arrondis,
+  ombres, plans, points de rupture, largeurs, durées), séparée pour tenir sous
+  [TAILLE-FICHIER] —, puis les isolats par ordre alphabétique, et ne garde que ce qui vaut pour
+  tout le produit : `@utility` partagés ([STYLE-5]), transitions de page et de mise en page,
+  règle globale `prefers-reduced-motion`. Un composant écrit la classe d'un jeton, jamais une
+  valeur arbitraire (`text-[0.7rem]`, `z-[120]`, `max-w-[420px]`) qui le recopie. Un nouvel
+  isolat s'ajoute au tableau ci-dessous et à `main.css` dans le même commit.
+
+  | Isolat | Contenu exclusif |
+  |---|---|
+  | — | aucun isolat pour l'instant |
+- **[STYLE-4]** Toute règle d'un isolat vit sous **un sélecteur parent unique** servant
+  d'espace de noms (`.map-tooltip` dans `map.css`). Aucun sélecteur d'élément nu (`div`,
+  `span`, `input`) hors d'une classe parent ; l'intérieur d'un composant tiers ou d'un HTML
+  libre se vise par imbrication CSS ou `:deep()` sous ce parent.
+- **[STYLE-5]** Anti-patterns interdits :
+  - classes arbitraires en rafale (`[&_div:nth-child(3)]:px-4 [mask-image:…]`) : les convertir
+    en classe dans l'isolat correspondant ;
+  - `@apply` pour recréer un composant (c'est le rôle d'un composant Vue). Seule exception : un
+    `@utility` de `main.css` qui nomme un jeton partagé par tout le produit (`field-dark`,
+    `form-input`, `form-label`) ; il reste un aspect (bordure, fond, graisse), jamais une mise
+    en page ;
+  - `!important`, réservé aux surcharges de bibliothèques tierces (graphiques, cartes,
+    lecteurs embarqués) qui l'imposent ; interdit sur les composants internes.

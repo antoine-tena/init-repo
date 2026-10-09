@@ -1,0 +1,10 @@
+# Scripts d'installation des dépendances : refusés, les binaires précompilés suffisent.
+allowBuilds:
+  '@parcel/watcher': false
+  '@tailwindcss/oxide': false
+  esbuild: false
+  unrs-resolver: false
+  vue-demi: false
+
+# Versions exactes dans package.json, y compris après `init-repo maj` ([DEPENDANCES-FIGEES]).
+saveExact: true
