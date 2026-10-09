@@ -1,0 +1,13 @@
+# Image de frontend/ : site Astro construit, servi par astro preview.
+# Construite depuis la racine du dépôt (compose.yaml, ou podman build -f frontend/Containerfile .).
+# pnpm par corepack, jamais npm install global ; utilisateur non-root ([CONTENEUR-DURCI]).
+FROM docker.io/library/node:24-slim
+RUN corepack enable
+WORKDIR /srv/frontend
+COPY frontend/package.json frontend/pnpm-lock.yaml frontend/pnpm-workspace.yaml ./
+RUN pnpm install --frozen-lockfile --ignore-scripts
+COPY frontend/ ./
+RUN pnpm build && chown -R node /srv
+USER node
+EXPOSE 4321
+CMD ["pnpm", "preview", "--host", "0.0.0.0", "--port", "4321"]

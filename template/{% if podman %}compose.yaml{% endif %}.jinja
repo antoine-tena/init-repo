@@ -1,0 +1,71 @@
+{%- set base = nom | replace('-', '_') -%}
+{%- set front_port = {'nuxt': 3000, 'next': 3000, 'astro': 4321, 'streamlit': 8501, 'dash': 8050}.get(frontend) -%}
+# Pile du projet sous podman : `kiln dev --containers` (podman-compose up --build).
+# Images construites depuis la racine du dépôt (`.containerignore`) ; jamais docker.
+name: {{ nom }}
+
+services:
+{%- if backend == 'django' %}
+  db:
+    image: docker.io/library/postgres:16-alpine
+    environment:
+      POSTGRES_USER: {{ base }}
+      # Base locale du poste, jamais exposée : ce mot de passe ne protège rien d'autre.
+      POSTGRES_PASSWORD: {{ base }}_local
+      POSTGRES_DB: {{ base }}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U {{ base }}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+{%- endif %}
+{%- if backend in ['django', 'fastapi'] %}
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Containerfile
+    env_file:
+      - backend/.env
+{%- if backend == 'django' %}
+    environment:
+      DATABASE_URL: postgres://{{ base }}:{{ base }}_local@db:5432/{{ base }}
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,backend
+    depends_on:
+      db:
+        condition: service_healthy
+{%- endif %}
+    ports:
+      - "8000:8000"
+{%- elif backend == 'data' %}
+
+  notebooks:
+    build:
+      context: .
+      dockerfile: backend/Containerfile
+    ports:
+      - "2718:2718"
+{%- endif %}
+{%- if frontend != 'aucun' %}
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Containerfile
+{%- if backend in ['django', 'fastapi'] %}
+    environment:
+      BACKEND_URL: http://backend:8000
+      API_URL: http://backend:8000
+    depends_on:
+      - backend
+{%- endif %}
+    ports:
+      - "{{ front_port }}:{{ front_port }}"
+{%- endif %}
+{%- if backend == 'django' %}
+
+volumes:
+  db-data:
+{%- endif %}

@@ -7,7 +7,11 @@ on:
   workflow_call:
     inputs:
       image:
-        description: Dossiers des images à construire (Containerfile), séparés par des espaces
+        description: Dossiers des images à construire (contexte et Containerfile), séparés par des espaces
+        type: string
+        default: ""
+      containerfiles:
+        description: Containerfile construits depuis la racine du dépôt, séparés par des espaces
         type: string
         default: ""
       shellcheck:
@@ -47,6 +51,17 @@ jobs:
           for dossier in $DOSSIERS; do
             echo "::group::podman build $dossier"
             podman build --pull -t "ci-${GITHUB_RUN_ID}-$(basename "$dossier")" "$dossier"
+            echo "::endgroup::"
+          done
+
+      - name: Images depuis la racine (podman)
+        if: inputs.containerfiles != ''
+        env:
+          CONTAINERFILES: ${{ inputs.containerfiles }}
+        run: |
+          for containerfile in $CONTAINERFILES; do
+            echo "::group::podman build -f $containerfile ."
+            podman build --pull -f "$containerfile" -t "ci-${GITHUB_RUN_ID}-$(dirname "$containerfile")" .
             echo "::endgroup::"
           done
 

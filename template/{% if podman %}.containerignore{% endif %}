@@ -1,0 +1,23 @@
+# Contexte des images : la racine du dépôt, sans ce que les outils régénèrent ni les secrets.
+.git
+.claude/worktrees
+**/.env
+**/.env.*
+**/node_modules
+**/.venv
+**/__pycache__
+**/.mypy_cache
+**/.ruff_cache
+**/.pytest_cache
+**/coverage.xml
+**/.coverage
+**/htmlcov
+**/.nuxt
+**/.output
+**/.next
+**/.astro
+**/dist
+**/db.sqlite3
+**/__marimo__
+backend/data/raw
+backend/data/interim

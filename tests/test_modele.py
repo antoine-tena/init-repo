@@ -64,6 +64,21 @@ def test_every_stack_renders_valid_files(tmp_path: Path, backend: str, frontend:
     assert (project_dir / "frontend").is_dir() == (frontend != "aucun")
 
 
+@pytest.mark.parametrize(("backend", "frontend"), STACKS)
+def test_podman_adds_containers_for_every_stack(
+    tmp_path: Path, backend: str, frontend: str
+) -> None:
+    project_dir = generate(tmp_path / "demo", backend=backend, frontend=frontend, podman=True)
+
+    compose = yaml.safe_load((project_dir / "compose.yaml").read_text())
+    for directory in ("backend", "frontend"):
+        if (project_dir / directory).is_dir():
+            containerfile = (project_dir / directory / "Containerfile").read_text()
+            instructions = [line for line in containerfile.splitlines() if not line.startswith("#")]
+            assert not [line for line in instructions if "pip install" in line or "docker " in line]
+    assert compose["services"]
+
+
 def test_stack_advice_follows_project_type(tmp_path: Path) -> None:
     project_dir = generate(tmp_path / "demo", type_projet="tableau")
 
