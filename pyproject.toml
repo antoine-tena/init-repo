@@ -1,0 +1,35 @@
+[project]
+name = "init-repo"
+version = "0.1.0"
+description = "Génère un projet complet (charte, outillage, Django + Nuxt) et le tient à jour"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = ["copier>=9.4,<10"]
+
+[project.scripts]
+init-repo = "init_repo.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = ["mypy", "pytest", "ruff"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "SIM", "RUF", "ANN"]
+
+[tool.mypy]
+strict = true
+
+[[tool.mypy.overrides]]
+module = ["copier", "copier.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["yaml"]
+ignore_missing_imports = true
