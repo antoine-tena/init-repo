@@ -1,0 +1,36 @@
+[project]
+name = "{{ nom }}-backend"
+version = "0.1.0"
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi>=0.143.0,<0.144.0",
+    "pydantic-settings>=2.15.0,<3.0.0",
+    "structlog>=26.1.0,<27.0.0",
+    "uvicorn[standard]>=0.54.0,<0.55.0",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1,<0.29.0",
+    "mypy>=2.4.0,<3.0.0",
+    "pytest>=9.1.1,<10.0.0",
+    "pytest-cov>=7.1.0,<8.0.0",
+    "ruff>=0.16.10,<0.17.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "SIM", "RUF", "ANN"]
+
+[tool.mypy]
+strict = true
+plugins = ["pydantic.mypy"]
+
+[tool.pytest.ini_options]
+python_files = ["test_*.py"]
+
+[tool.coverage.run]
+source = ["app"]

@@ -1,0 +1,44 @@
+"""Point d'entrée de l'API : `uv run uvicorn app.main:app --reload`."""
+
+import structlog
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from app import health
+from app.settings import get_settings
+
+API_PREFIX = "/api"
+
+
+def configure_logging(is_debug: bool) -> None:
+    """[JOURNALISATION] : événements structurés `domaine.evenement`, jamais de phrase formatée."""
+    renderer = structlog.dev.ConsoleRenderer() if is_debug else structlog.processors.JSONRenderer()
+    structlog.configure(
+        processors=[
+            structlog.contextvars.merge_contextvars,
+            structlog.processors.add_log_level,
+            structlog.processors.TimeStamper(fmt="iso", utc=True),
+            renderer,
+        ],
+    )
+
+
+def create_app() -> FastAPI:
+    settings = get_settings()
+    configure_logging(settings.debug)
+    application = FastAPI(
+        title="{{ titre }} API",
+        version="1.0.0",
+        openapi_url=f"{API_PREFIX}/openapi.json",
+    )
+    application.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.allowed_origins,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    application.include_router(health.router, prefix=API_PREFIX)
+    return application
+
+
+app = create_app()
