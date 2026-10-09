@@ -44,6 +44,19 @@ PNPM_CHECK_SCRIPTS: Mapping[str, tuple[str, ...]] = {
     "next": ("lint", "typecheck"),
     "astro": ("typecheck",),
 }
+# Produits de build et d'installation d'un framework, retirés quand on en change (`kiln set`).
+# Jamais de données ni de .env : seulement ce que l'outil régénère.
+PYTHON_ARTIFACTS = (".venv", ".pytest_cache", ".mypy_cache", ".ruff_cache", "htmlcov", ".coverage")
+BUILD_ARTIFACTS: Mapping[str, tuple[str, ...]] = {
+    "django": PYTHON_ARTIFACTS,
+    "fastapi": PYTHON_ARTIFACTS,
+    "data": (*PYTHON_ARTIFACTS, "__marimo__"),
+    "streamlit": PYTHON_ARTIFACTS,
+    "dash": PYTHON_ARTIFACTS,
+    "nuxt": ("node_modules", ".nuxt", ".output", ".data"),
+    "next": ("node_modules", ".next", "next-env.d.ts", "tsconfig.tsbuildinfo"),
+    "astro": ("node_modules", ".astro", "dist"),
+}
 PYTHON_CHECKS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("ruff", ("uv", "run", "ruff", "check", ".")),
     ("format", ("uv", "run", "ruff", "format", "--check", ".")),

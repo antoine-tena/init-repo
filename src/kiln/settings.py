@@ -5,6 +5,7 @@ framework retiré emporte ses fichiers, un framework ajouté apporte les siens, 
 les dépendances et la liste des règles non vérifiées suivent.
 """
 
+import shutil
 from pathlib import Path
 
 import yaml  # fourni par copier
@@ -13,7 +14,7 @@ from kiln.check import check_project
 from kiln.deps import lock_dependencies, sync_dependencies
 from kiln.rules import write_unverified_rules
 from kiln.shell import KilnError, require_tools, step
-from kiln.stack import load_stack, read_answers
+from kiln.stack import BACKEND_DIR, BUILD_ARTIFACTS, FRONTEND_DIR, Stack, load_stack, read_answers
 from kiln.update import apply_template, check_working_branch, report_changes
 
 SETTABLE_KEYS = (
@@ -62,8 +63,10 @@ def apply_settings(root: Path, assignments: list[str]) -> None:
     require_tools("git", "uv")
     check_working_branch(root)
     step("Paramètres : " + ", ".join(f"{key}={value}" for key, value in changes.items()))
+    previous_stack = load_stack(root)
     apply_template(root, changes)
     stack = load_stack(root)
+    remove_replaced_artifacts(root, previous_stack, stack)
     if stack.pnpm_dir is not None:
         require_tools("pnpm")
     lock_dependencies(root, stack)
@@ -71,3 +74,22 @@ def apply_settings(root: Path, assignments: list[str]) -> None:
     write_unverified_rules(root, stack)
     report_changes(root)
     check_project(root)
+
+
+def remove_replaced_artifacts(root: Path, previous: Stack, current: Stack) -> None:
+    """Produits de build d'un framework remplacé (`.nuxt`, `node_modules`, `.venv`…), qui
+    gêneraient les outils du nouveau ; jamais de données ni de `.env`."""
+    replaced = [
+        (BACKEND_DIR, previous.backend) if previous.backend != current.backend else None,
+        (FRONTEND_DIR, previous.frontend) if previous.frontend != current.frontend else None,
+    ]
+    for directory, framework in filter(None, replaced):
+        for artifact in BUILD_ARTIFACTS.get(framework, ()):
+            path = root / directory / artifact
+            if path.is_dir():
+                shutil.rmtree(path)
+            elif path.exists():
+                path.unlink()
+            else:
+                continue
+            print(f"Retiré : {directory}/{artifact} ({framework})")
