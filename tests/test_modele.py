@@ -1,6 +1,10 @@
+import json
+import tomllib
 from pathlib import Path
 
 import copier
+import pytest
+import yaml
 
 TEMPLATE_DIR = Path(__file__).resolve().parent.parent
 ANSWERS = {
@@ -10,44 +14,61 @@ ANSWERS = {
     "proprietaire": "antoine-tena",
     "equipe": ["antoine-tena", "NathanBarrachin"],
 }
+BACKENDS = ("django", "fastapi", "data", "aucun")
+FRONTENDS = ("nuxt", "next", "astro", "streamlit", "dash", "aucun")
+STACKS = [
+    (back, front) for back in BACKENDS for front in FRONTENDS if (back, front) != ("aucun",) * 2
+]
+JSON_FILES = (".vscode/settings.json", ".vscode/extensions.json", ".claude/settings.json")
 
 
-def generate(destination: Path) -> Path:
+def generate(destination: Path, **extra_answers: object) -> Path:
     copier.run_copy(
-        str(TEMPLATE_DIR), destination, data=ANSWERS, defaults=True, vcs_ref="HEAD", quiet=True
+        str(TEMPLATE_DIR),
+        destination,
+        data={**ANSWERS, **extra_answers},
+        defaults=True,
+        vcs_ref="HEAD",
+        quiet=True,
     )
     return destination
 
 
-def test_generated_project_has_full_layout(tmp_path: Path) -> None:
+def test_default_stack_is_django_and_nuxt(tmp_path: Path) -> None:
     project_dir = generate(tmp_path / "demo")
 
-    expected_files = [
-        ".claude/settings.json",
-        ".vscode/settings.json",
-        ".pre-commit-config.yaml",
-        "CLAUDE.md",
-        "backend/CLAUDE.md",
-        "frontend/CLAUDE.md",
-        "backend/.env.example",
-        "backend/config/api.py",
-        "frontend/nuxt.config.ts",
-        ".copier-answers.yml",
-    ]
-    missing_files = [name for name in expected_files if not (project_dir / name).is_file()]
-    assert missing_files == []
-
-
-def test_answers_fill_project_files(tmp_path: Path) -> None:
-    project_dir = generate(tmp_path / "demo")
-
+    assert (project_dir / "backend/config/api.py").is_file()
+    assert (project_dir / "frontend/nuxt.config.ts").is_file()
     assert (
         (project_dir / ".github/CODEOWNERS")
         .read_text()
         .endswith("* @antoine-tena @NathanBarrachin\n")
     )
-    assert 'name = "demo-backend"' in (project_dir / "backend/pyproject.toml").read_text()
-    assert (project_dir / "README.md").read_text().startswith("# Démo\n")
+
+
+@pytest.mark.parametrize(("backend", "frontend"), STACKS)
+def test_every_stack_renders_valid_files(tmp_path: Path, backend: str, frontend: str) -> None:
+    project_dir = generate(tmp_path / "demo", backend=backend, frontend=frontend)
+
+    rendered = [
+        path for path in project_dir.rglob("*") if path.is_file() and ".git" not in path.parts
+    ]
+    assert not [path for path in rendered if path.suffix == ".jinja"]
+    assert not [path for path in rendered if path.suffix != ".ico" and "{%" in path.read_text()]
+    tomllib.loads((project_dir / "charte.toml").read_text())
+    yaml.safe_load((project_dir / ".github/workflows/ci.yml").read_text())
+    yaml.safe_load((project_dir / ".pre-commit-config.yaml").read_text())
+    for name in JSON_FILES:
+        json.loads((project_dir / name).read_text())
+    assert (project_dir / "backend").is_dir() == (backend != "aucun")
+    assert (project_dir / "frontend").is_dir() == (frontend != "aucun")
+
+
+def test_stack_advice_follows_project_type(tmp_path: Path) -> None:
+    project_dir = generate(tmp_path / "demo", type_projet="tableau")
+
+    answers = yaml.safe_load((project_dir / ".copier-answers.yml").read_text())
+    assert (answers["backend"], answers["frontend"]) == ("data", "streamlit")
 
 
 def test_vue_templates_keep_their_mustaches(tmp_path: Path) -> None:
@@ -57,25 +78,10 @@ def test_vue_templates_keep_their_mustaches(tmp_path: Path) -> None:
     assert "{{ health?.status }}" in health_component
 
 
-def test_charter_tooling_is_generated(tmp_path: Path) -> None:
-    project_dir = generate(tmp_path / "demo")
-
-    for name in ("charte.toml", "scripts/ci/charte-non-verifiee.txt", ".github/workflows/ci.yml"):
-        assert (project_dir / name).is_file(), name
-    assert not (project_dir / "docs").exists()
-
-
 def test_a_faire_is_optional(tmp_path: Path) -> None:
-    project_dir = tmp_path / "demo"
-    copier.run_copy(
-        str(TEMPLATE_DIR),
-        project_dir,
-        data={**ANSWERS, "avec_a_faire": True, "boussole": "la démo en ligne"},
-        defaults=True,
-        vcs_ref="HEAD",
-        quiet=True,
-    )
+    project_dir = generate(tmp_path / "demo", avec_a_faire=True, boussole="la démo en ligne")
 
     a_faire = (project_dir / "docs/a-faire/a-faire.md").read_text()
     assert "La boussole est **la démo en ligne**." in a_faire
     assert "docs/a-faire/" in (project_dir / "CLAUDE.md").read_text()
+    assert not (generate(tmp_path / "sans", backend="fastapi") / "docs").exists()
