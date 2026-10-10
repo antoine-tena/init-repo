@@ -105,7 +105,7 @@ Ruff, mypy et pytest pour chaque projet Python
 {%- if frontend in ['nuxt', 'next'] %}, ESLint et le contrôle des types côté frontend
 {%- elif frontend == 'astro' %}, `astro check` côté frontend{% endif %}, puis la charte.
 
-{%- if backend == 'django' and frontend == 'nuxt' %}
+{% if backend == 'django' and frontend == 'nuxt' -%}
 ## Contrat d'API
 
 Le front appelle l'API par `useApi()`, typé par `openapi.json`. Après tout changement d'une route

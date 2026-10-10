@@ -131,3 +131,14 @@ def test_data_stack_accepts_numeric_arrays_and_trained_models(tmp_path: Path) ->
     assert "`data/models/`" in rules
     attributes = (project_dir / ".gitattributes").read_text()
     assert "backend/data/models/** linguist-generated=true" in attributes
+
+
+@pytest.mark.parametrize(("backend", "frontend"), [("django", "nuxt"), ("data", "streamlit")])
+def test_readme_sections_start_on_their_own_line(
+    tmp_path: Path, backend: str, frontend: str
+) -> None:
+    project_dir = generate(tmp_path / "demo", backend=backend, frontend=frontend)
+
+    readme = (project_dir / "README.md").read_text()
+    assert "\n\n## Suivi du travail\n" in readme
+    assert all(line.startswith("## ") for line in readme.splitlines() if "## " in line)
