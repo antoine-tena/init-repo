@@ -7,6 +7,19 @@ _templates_suffix: .jinja
 _answers_file: .copier-answers.yml
 _min_copier_version: "9.4"
 
+# Première question : l'envergure du projet, en quatre crans nommés d'après le feu du four.
+# Elle règle les valeurs par défaut des questions suivantes (podman pour l'instant) et se change
+# plus tard par `kiln set envergure=…`.
+envergure:
+  type: str
+  help: How hot does this one burn? (envergure du projet)
+  choices:
+    "Spark : un script, un outil perso, une analyse ponctuelle": spark
+    "Ember : une petite app ou un site, une ou deux personnes, peu d'enjeu": ember
+    "Flame : une app en production, de vrais utilisateurs, plusieurs contributeurs": flame
+    "Blaze : plusieurs équipes ou services, de gros enjeux": blaze
+  default: ember
+
 nom:
   type: str
   help: Nom court du projet (minuscules, chiffres, tirets), préfixe des paquets
@@ -79,7 +92,7 @@ frontend:
 podman:
   type: bool
   help: Conteneurs podman (Containerfile, compose.yaml, PostgreSQL) ? Activable plus tard par `kiln set podman=true`.
-  default: false
+  default: "{{ envergure in ['flame', 'blaze'] }}"
 
 # Suivi du travail, d'office dans tout repo : docs/a-faire/ (skill base:a-faire).
 boussole:

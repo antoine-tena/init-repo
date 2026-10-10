@@ -87,6 +87,15 @@ def test_stack_advice_follows_project_type(tmp_path: Path) -> None:
     assert (answers["backend"], answers["frontend"]) == ("data", "streamlit")
 
 
+@pytest.mark.parametrize(("envergure", "has_podman"), [("ember", False), ("flame", True)])
+def test_envergure_sets_podman_default(tmp_path: Path, envergure: str, has_podman: bool) -> None:
+    project_dir = generate(tmp_path / "demo", envergure=envergure)
+
+    answers = yaml.safe_load((project_dir / ".copier-answers.yml").read_text())
+    assert (answers["envergure"], answers["podman"]) == (envergure, has_podman)
+    assert f"**{envergure.capitalize()}**" in (project_dir / "CLAUDE.md").read_text()
+
+
 def test_vue_templates_keep_their_mustaches(tmp_path: Path) -> None:
     project_dir = generate(tmp_path / "demo")
 

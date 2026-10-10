@@ -43,7 +43,7 @@ système du poste (Linux, WSL ou macOS) et le garde dans `~/.config/kiln/config.
 
 | Commande | Rôle |
 |---|---|
-| `kiln new <directory>` | Questionnaire (type de projet, stack conseillée, podman…), génération, verrous, installation, premier commit sur `main`. |
+| `kiln new <directory>` | Questionnaire (envergure, type de projet, stack conseillée, podman…), génération, verrous, installation, premier commit sur `main`. |
 | `kiln install` | Prépare un poste après un clone : outils (pre-commit avec pre-commit-uv, podman-compose), dépendances, `backend/.env`, migrations, pre-commit. Relançable. |
 | `kiln dev` | Lance les serveurs de la stack ; `--containers` : toute la pile dans podman. |
 | `kiln check` | Ruff, mypy et pytest pour chaque projet Python, ESLint et les types côté front, puis la charte. |
@@ -56,11 +56,27 @@ système du poste (Linux, WSL ou macOS) et le garde dans `~/.config/kiln/config.
 `set` et `update` travaillent sur une branche, arbre propre ; les conflits entre le modèle et une
 modification locale sont marqués dans le fichier (`<<<<<<<`). Relire, commiter, ouvrir une PR.
 
-Options de `new` : `--type`, `--backend`, `--frontend`, `--podman`, `--name`, `--title`,
+Options de `new` : `--size`, `--type`, `--backend`, `--frontend`, `--podman`, `--name`, `--title`,
 `--description`, `--owner`, `--team login1,login2`, `--goal "<boussole>"`, `--prod-url <url>`,
 `--github`,
 `--no-install`, `--template <chemin ou URL>`. Les questions sans option sont posées dans le
 terminal.
+
+## Envergure
+
+Première question de `kiln new` : « How hot does this one burn? ». Quatre crans, nommés d'après
+le feu du four :
+
+| Cran | Projet |
+|---|---|
+| `spark` | un script, un outil perso, une analyse ponctuelle |
+| `ember` | une petite app ou un site, une ou deux personnes, peu d'enjeu (par défaut) |
+| `flame` | une app en production, de vrais utilisateurs, plusieurs contributeurs (AnnSki) |
+| `blaze` | plusieurs équipes ou services, de gros enjeux |
+
+L'envergure est écrite dans le `CLAUDE.md` du projet et règle les valeurs par défaut des
+questions suivantes : à partir de `flame`, les conteneurs podman sont précochés. Elle se change
+par `kiln set envergure=…` et `kiln status` l'affiche.
 
 ## Conseil de stack
 

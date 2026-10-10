@@ -19,6 +19,7 @@ from kiln.statusline import apply_statusline_settings
 from kiln.update import apply_template, check_working_branch, report_changes
 
 SETTABLE_KEYS = (
+    "envergure",
     "nom",
     "titre",
     "description",
