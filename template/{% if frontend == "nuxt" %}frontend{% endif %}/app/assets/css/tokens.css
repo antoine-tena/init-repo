@@ -2,4 +2,8 @@
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --color-brand: oklch(0.55 0.15 250);
+  /* Textes d'état, contrastés à 4,5:1 au moins sur fond blanc (WCAG AA). */
+  --color-muted: oklch(0.55 0.02 265);
+  --color-danger: oklch(0.5 0.19 27);
+  --color-success: oklch(0.52 0.14 150);
 }

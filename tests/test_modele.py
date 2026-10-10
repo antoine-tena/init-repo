@@ -105,6 +105,24 @@ def test_a_faire_is_always_there(tmp_path: Path) -> None:
     assert not [line for line in urgent.splitlines() if line.lstrip().startswith("- [ ]")]
 
 
+def test_django_and_nuxt_share_a_typed_api_contract(tmp_path: Path) -> None:
+    project_dir = generate(tmp_path / "demo")
+
+    use_health = (project_dir / "frontend/app/composables/useHealth.ts").read_text()
+    assert "useApi().get('/api/health'" in use_health
+    assert (project_dir / "frontend/app/composables/useApi.ts").is_file()
+    assert "openapi.json linguist-generated" in (project_dir / ".gitattributes").read_text()
+    workflow = yaml.safe_load((project_dir / ".github/workflows/ci.yml").read_text())
+    assert workflow["jobs"]["contrat"]["uses"].endswith("contrat-api.yml@main")
+
+
+def test_fastapi_front_keeps_its_plain_fetch(tmp_path: Path) -> None:
+    project_dir = generate(tmp_path / "demo", backend="fastapi")
+
+    assert not (project_dir / "frontend/app/composables/useApi.ts").exists()
+    assert "apiBase" in (project_dir / "frontend/nuxt.config.ts").read_text()
+
+
 def test_data_stack_accepts_numeric_arrays_and_trained_models(tmp_path: Path) -> None:
     project_dir = generate(tmp_path / "demo", backend="data", frontend="streamlit")
 

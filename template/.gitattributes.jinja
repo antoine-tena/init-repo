@@ -16,6 +16,11 @@ frontend/uv.lock linguist-generated=true
 {%- elif frontend != 'aucun' %}
 frontend/pnpm-lock.yaml linguist-generated=true
 {%- endif %}
+{%- if backend == 'django' and frontend == 'nuxt' %}
+# Contrat d'API : `kiln contrat` les régénère, la CI (contrat-api.yml) vérifie leur dérive.
+openapi.json linguist-generated=true
+frontend/app/types/api.d.ts linguist-generated=true
+{%- endif %}
 {%- if backend == 'data' %}
 # Modèles entraînés : régénérés par leur commande d'entraînement (data/README.md).
 backend/data/models/** linguist-generated=true

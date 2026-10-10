@@ -4,9 +4,10 @@ import argparse
 import sys
 from pathlib import Path
 
-from kiln import check, dev, fleet, install, new, settings, update
+from kiln import check, contract, dev, fleet, install, new, settings, update
 from kiln.config import load_config
 from kiln.shell import KilnError, repo_root
+from kiln.stack import load_stack
 
 EXIT_FAILURE = 1
 PROJECT_TYPES = ("app", "api", "site", "tableau", "analyse")
@@ -23,6 +24,7 @@ def build_parser() -> argparse.ArgumentParser:
     dev_parser = commands.add_parser("dev", help="lancer le projet en local")
     dev_parser.add_argument("--containers", action="store_true", help="toute la pile dans podman")
     commands.add_parser("check", help="lancer les contrôles du projet")
+    commands.add_parser("contrat", help="régénérer openapi.json et les types du front")
     status_parser = commands.add_parser("status", help="état des repos kiln du dossier de code")
     status_parser.add_argument("--all", action="store_true", help="(par défaut) tous les repos")
     set_parser = commands.add_parser("set", help="afficher ou changer les paramètres du repo")
@@ -112,6 +114,8 @@ def dispatch(arguments: argparse.Namespace) -> None:
         dev.run_dev_servers(root, in_containers=arguments.containers)
     elif arguments.command == "check":
         check.check_project(root)
+    elif arguments.command == "contrat":
+        contract.generate_api_contract(root, load_stack(root))
     elif arguments.command == "set":
         if arguments.assignments:
             settings.apply_settings(root, arguments.assignments)

@@ -19,10 +19,12 @@ export default defineNuxtConfig({
   css: ['~/assets/css/main.css'],
   vite: { plugins: [tailwindcss()] },
   typescript: { strict: true, typeCheck: false },
-{%- if backend in ['django', 'fastapi'] %}
+{%- if backend == 'fastapi' %}
   runtimeConfig: {
     public: { apiBase: '/api' }
   },
+{%- endif %}
+{%- if backend in ['django', 'fastapi'] %}
   routeRules: {
     '/api/**': { proxy: `${backendOrigin}/api/**` }
   }

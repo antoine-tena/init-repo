@@ -41,6 +41,14 @@ jobs:
     with:
       dossier: frontend
 {%- endif %}
+{%- if backend == 'django' and frontend == 'nuxt' %}
+
+  contrat:
+    uses: antoine-tena/kiln/.github/workflows/contrat-api.yml@main
+    with:
+      env: |
+        DJANGO_SECRET_KEY=ci-sans-valeur-secrete
+{%- endif %}
 
   charte:
     uses: antoine-tena/kiln/.github/workflows/charte.yml@main

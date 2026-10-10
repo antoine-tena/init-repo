@@ -5,13 +5,13 @@ const { data: health, status } = await useHealth()
 </script>
 
 <template>
-  <p v-if="status === 'pending'" class="text-gray-500">
+  <p v-if="status === 'pending'" class="text-muted">
     Connexion au backend…
   </p>
-  <p v-else-if="status === 'error'" class="text-red-700">
-    Le backend ne répond pas : lancez-le avec <code>uv run python manage.py runserver</code>.
+  <p v-else-if="status === 'error'" class="text-danger">
+    Le backend ne répond pas : lancez le projet avec <code>kiln dev</code>.
   </p>
-  <p v-else class="text-green-700">
+  <p v-else class="text-success">
     Backend joignable (statut : {{ health?.status }}).
   </p>
 </template>

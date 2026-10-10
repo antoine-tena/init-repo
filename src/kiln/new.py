@@ -9,6 +9,7 @@ import copier
 
 from kiln import github, install
 from kiln.config import load_config
+from kiln.contract import generate_api_contract
 from kiln.deps import lock_dependencies
 from kiln.rules import write_unverified_rules
 from kiln.shell import KilnError, require_tools, run, step
@@ -53,6 +54,7 @@ def create_project(request: NewProjectRequest) -> None:
     write_unverified_rules(root, stack)
     if request.should_install:
         install.install_project(root)
+        generate_api_contract(root, stack)
     _initial_commit(root)
     if request.should_publish:
         github.publish(root, _repository_name(root), _team_logins(root))

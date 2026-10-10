@@ -7,6 +7,7 @@ import copier
 from copier.errors import UserMessageError
 
 from kiln.check import check_project
+from kiln.contract import generate_api_contract
 from kiln.deps import lock_dependencies, sync_dependencies, update_dependencies
 from kiln.rules import write_unverified_rules
 from kiln.shell import KilnError, capture, require_tools, run, step
@@ -37,6 +38,7 @@ def update_project(
     elif should_update_template:
         lock_dependencies(root, stack)
         sync_dependencies(root, stack)
+    generate_api_contract(root, stack)
     write_unverified_rules(root, stack)
     report_changes(root)
     if should_check:
