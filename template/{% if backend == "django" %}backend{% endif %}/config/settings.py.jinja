@@ -50,6 +50,8 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                # [CSP-NONCE] : le nonce de la requête (csp_nonce) dans les gabarits.
+                "django.template.context_processors.csp",
             ],
         },
     },
