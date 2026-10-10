@@ -4,7 +4,7 @@ Section 3 de la charte {{ titre }}, chargée quand on travaille dans `backend/`.
 (identifiants, régimes, hiérarchie), les règles communes (§1), les standards 2026 (§4) et Git
 (§5) sont dans le `CLAUDE.md` de la racine.
 
-## 3. Backend (données Python : polars, marimo, Plotly)
+## 3. Backend (données Python : polars ou NumPy, marimo, Plotly)
 
 Explorer : `uv run marimo edit notebooks` (ou `kiln dev`). Vérifier : `kiln check`.
 
@@ -12,21 +12,29 @@ Explorer : `uv run marimo edit notebooks` (ou `kiln dev`). Vérifier : `kiln che
 - **[PIPELINE]** Toute donnée suit la même chaîne, un module par étape : `pipeline/sources.py`
   charge et valide, `pipeline/transforms.py` transforme, `pipeline/figures.py` trace. Une étape
   n'appelle jamais celle d'avant : elle reçoit son entrée en paramètre.
-- **[FONCTIONS-PURES]** Une transformation reçoit un `DataFrame` et en renvoie un nouveau : pas
-  de lecture de fichier, pas d'écriture, pas d'état global. Elle se teste donc sans disque.
-- **[POLARS]** polars par défaut, en expressions (`pl.col(...)`) et en mode paresseux
-  (`scan_*`, `.lazy()`) dès que le volume le justifie. pandas seulement quand une bibliothèque
-  l'impose, converti à la frontière (`to_pandas()` au dernier moment).
+- **[FONCTIONS-PURES]** Une transformation reçoit ses données (`DataFrame`, tableau NumPy,
+  image) et en renvoie de nouvelles : pas de lecture de fichier, pas d'écriture, pas d'état
+  global. Elle se teste donc sans disque.
+- **[POLARS]** Données tabulaires : polars par défaut, en expressions (`pl.col(...)`) et en
+  mode paresseux (`scan_*`, `.lazy()`) dès que le volume le justifie. Tableaux numériques
+  (images, signaux, matrices, poids d'un modèle) : NumPy, vectorisé, sans boucle Python sur les
+  éléments. pandas seulement quand une bibliothèque l'impose, converti à la frontière
+  (`to_pandas()` au dernier moment). *Amendé le 10 octobre 2026 : les jeux non tabulaires
+  (Vision, images MNIST) n'avaient pas de règle.*
 - **[SCHEMA-DONNEES]** Chaque jeu chargé est validé à la frontière ([VALIDATION-AUX-FRONTIERES]) :
-  colonnes et types attendus déclarés dans un `pl.Schema`, échec explicite
-  (`DatasetSchemaError`) si le fichier change de forme — le chargement échoue, pas la figure.
+  colonnes et types déclarés dans un `pl.Schema` pour un jeu tabulaire ; forme, type et bornes
+  vérifiés pour un tableau ou un fichier binaire (en-tête, dimensions). Échec explicite par une
+  exception dédiée (`DatasetSchemaError`) si le fichier change de forme — le chargement échoue,
+  pas la figure.
 
 ### Données
 - **[SOURCES]** Chaque jeu de données a sa source (lien, date de récupération, licence) notée
   dans `data/README.md`.
 - **[DONNEES-LOURDES]** `data/raw/` et `data/interim/` sont hors du dépôt ; seul ce qui est petit
-  et reproductible est commité (`data/sample/`). Un jeu brut se récupère par une fonction de
-  `pipeline/sources.py`, jamais par un téléchargement à la main non décrit.
+  et reproductible est commité : `data/sample/`, et `data/models/` pour un modèle entraîné
+  (1 Mo au plus par fichier, avec sa commande d'entraînement dans `data/README.md`). Un jeu
+  brut se récupère par une fonction de `pipeline/sources.py`, jamais par un téléchargement à la
+  main non décrit.
 - **[REPRODUCTIBLE]** Une figure se régénère par une commande depuis les données sources ;
   aucune retouche à la main d'un fichier généré. Tout tirage aléatoire prend une graine fixée.
 - **[DONNEES-PERSO]** Aucune donnée personnelle réelle dans le dépôt ni dans une figure : on
@@ -47,7 +55,8 @@ Explorer : `uv run marimo edit notebooks` (ou `kiln dev`). Vérifier : `kiln che
 - **[TYPAGE]** Annotations de type sur toutes les signatures, vérifiées par mypy strict.
 - **[JOURNALISATION]** Pas de `print()` dans `pipeline/` : le résultat d'une étape est sa valeur
   de retour ; un journal, s'il en faut un, passe par `structlog`.
-- **[TESTS]** Toute fonction de `pipeline/` a ses tests, sur de petits `DataFrame` écrits dans le
-  test ; les cas limites (vide, valeur manquante, type inattendu) compris.
+- **[TESTS]** Toute fonction de `pipeline/` a ses tests, sur de petits jeux (`DataFrame`,
+  tableau) écrits dans le test ; les cas limites (vide, valeur manquante, type inattendu)
+  compris.
 - **[NON-REGRESSION]** Toute correction de bug arrive avec le test qui l'aurait détectée.
 - **[RESEAU]** Aucun test ne télécharge de données.
