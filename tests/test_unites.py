@@ -4,6 +4,7 @@ import pytest
 from packaging.version import Version
 
 from kiln.deps import _major_bounds
+from kiln.install import ensure_env_file
 from kiln.rules import charter_rules, verified_rules
 from kiln.settings import parse_assignments
 from kiln.shell import KilnError
@@ -66,3 +67,15 @@ def test_legacy_template_source_is_replaced(tmp_path: Path) -> None:
     replace_legacy_source(tmp_path)
 
     assert "_src_path: https://github.com/antoine-tena/kiln.git" in answers.read_text()
+
+
+def test_env_file_gets_a_local_secret_and_is_kept(tmp_path: Path) -> None:
+    (tmp_path / ".env.example").write_text("DJANGO_SECRET_KEY=\nDJANGO_DEBUG=True\n")
+
+    ensure_env_file(tmp_path)
+    first = (tmp_path / ".env").read_text()
+    ensure_env_file(tmp_path)
+
+    assert first.startswith("DJANGO_SECRET_KEY=") and len(first.splitlines()[0]) > 30
+    assert "DJANGO_DEBUG=True" in first
+    assert (tmp_path / ".env").read_text() == first

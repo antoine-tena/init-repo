@@ -1,5 +1,5 @@
 {%- set python_dirs = (['backend'] if backend in ['django', 'fastapi', 'data'] else []) + (['frontend'] if frontend in ['streamlit', 'dash'] else []) -%}
-{%- set back_text = {'django': "l'API, en Django + Django Ninja", 'fastapi': "l'API, en FastAPI", 'data': "la chaîne de données (polars, Plotly) et les notebooks marimo"}.get(backend) -%}
+{%- set back_text = {'django': "l'API, en Django + Django Ninja", 'fastapi': "l'API, en FastAPI", 'data': "la chaîne de données (polars ou NumPy, Plotly) et les notebooks marimo"}.get(backend) -%}
 {%- set front_text = {'nuxt': "l'interface, en Nuxt 4 + Vue 3", 'next': "l'interface, en Next.js 16 + React 19", 'astro': "le site, en Astro 7", 'streamlit': "le tableau de bord, en Streamlit", 'dash': "le tableau de bord, en Dash"}.get(frontend) -%}
 {%- set front_url = {'nuxt': 'http://localhost:3000', 'next': 'http://localhost:3000', 'astro': 'http://localhost:4321', 'streamlit': 'http://localhost:8501', 'dash': 'http://localhost:8050'}.get(frontend) -%}
 # {{ titre }}

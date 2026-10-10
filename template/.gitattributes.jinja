@@ -5,6 +5,7 @@
 *.png binary
 *.jpg binary
 *.ico binary
+*.npz binary
 
 # Fichiers générés, exemptés de [TAILLE-FICHIER] (CLAUDE.md).
 {%- if backend in ['django', 'fastapi', 'data'] %}
@@ -19,4 +20,8 @@ frontend/pnpm-lock.yaml linguist-generated=true
 # Contrat d'API : `kiln contrat` les régénère, la CI (contrat-api.yml) vérifie leur dérive.
 openapi.json linguist-generated=true
 frontend/app/types/api.d.ts linguist-generated=true
+{%- endif %}
+{%- if backend == 'data' %}
+# Modèles entraînés : régénérés par leur commande d'entraînement (data/README.md).
+backend/data/models/** linguist-generated=true
 {%- endif %}

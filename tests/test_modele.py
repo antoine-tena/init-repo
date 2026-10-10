@@ -121,3 +121,13 @@ def test_fastapi_front_keeps_its_plain_fetch(tmp_path: Path) -> None:
 
     assert not (project_dir / "frontend/app/composables/useApi.ts").exists()
     assert "apiBase" in (project_dir / "frontend/nuxt.config.ts").read_text()
+
+
+def test_data_stack_accepts_numeric_arrays_and_trained_models(tmp_path: Path) -> None:
+    project_dir = generate(tmp_path / "demo", backend="data", frontend="streamlit")
+
+    rules = (project_dir / "backend/CLAUDE.md").read_text()
+    assert "NumPy" in rules
+    assert "`data/models/`" in rules
+    attributes = (project_dir / ".gitattributes").read_text()
+    assert "backend/data/models/** linguist-generated=true" in attributes
