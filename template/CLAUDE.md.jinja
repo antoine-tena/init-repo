@@ -3,10 +3,13 @@
 {%- set front_js = frontend in ['nuxt', 'next', 'astro'] %}
 {%- set api = backend in ['django', 'fastapi'] %}
 {%- set back_label = {'django': 'Django + Django Ninja', 'fastapi': 'FastAPI', 'data': 'données Python : polars ou NumPy, marimo, Plotly'}.get(backend) %}
+{%- set envergure_label = {'spark': 'un script, un outil perso, une analyse ponctuelle', 'ember': "une petite app ou un site, une ou deux personnes, peu d'enjeu", 'flame': 'une app en production, de vrais utilisateurs, plusieurs contributeurs', 'blaze': 'plusieurs équipes ou services, de gros enjeux'}[envergure] %}
 {%- set front_label = {'nuxt': 'Nuxt 4 + Vue 3', 'next': 'Next.js 16 + React 19', 'astro': 'Astro 7', 'streamlit': 'Streamlit', 'dash': 'Dash'}.get(frontend) -%}
 # {{ titre }} — consignes et charte de développement
 
 {{ description }}
+
+Envergure : **{{ envergure | capitalize }}**, {{ envergure_label }} (changer : `kiln set envergure=…`).
 
 {% if back_label and front_label -%}
 Monorepo : backend {{ back_label }} (`backend/`) et frontend {{ front_label }}

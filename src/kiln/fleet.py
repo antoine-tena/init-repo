@@ -71,10 +71,11 @@ def show_status(code_dir: Path) -> None:
         is_dirty = bool(capture(["git", "status", "--porcelain"], repo.root))
         is_current = bool(repo.template_commit) and latest.startswith(repo.template_commit)
         stack = load_stack(repo.root)
+        size = read_answers(repo.root).get("envergure", "?")
         print(
             f"{repo.root.relative_to(code_dir)!s:<30} {branch:<22} "
             f"{'modifié' if is_dirty else 'propre':<8} "
-            f"{'modèle à jour' if is_current else 'modèle en retard':<17} "
+            f"{'modèle à jour' if is_current else 'modèle en retard':<17} {size!s:<6} "
             f"{stack.backend} + {stack.frontend}{' + podman' if stack.has_podman else ''}"
         )
 

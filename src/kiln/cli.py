@@ -9,6 +9,7 @@ from kiln.config import load_config
 from kiln.shell import KilnError, repo_root
 
 EXIT_FAILURE = 1
+SIZES = ("spark", "ember", "flame", "blaze")
 PROJECT_TYPES = ("app", "api", "site", "tableau", "analyse")
 BACKENDS = ("django", "fastapi", "data", "aucun")
 FRONTENDS = ("nuxt", "next", "astro", "streamlit", "dash", "aucun")
@@ -38,6 +39,7 @@ def _add_new_command(commands: argparse._SubParsersAction[argparse.ArgumentParse
     new_parser.add_argument("--description", help="une phrase sur le projet")
     new_parser.add_argument("--owner", help="compte GitHub propriétaire")
     new_parser.add_argument("--team", help="logins GitHub séparés par des virgules")
+    new_parser.add_argument("--size", choices=SIZES, help="envergure du projet")
     new_parser.add_argument("--type", dest="project_type", choices=PROJECT_TYPES, help="conseil")
     new_parser.add_argument("--backend", choices=BACKENDS, help="backend (sinon conseillé)")
     new_parser.add_argument("--frontend", choices=FRONTENDS, help="frontend (sinon conseillé)")
@@ -66,6 +68,7 @@ def _new_project_request(arguments: argparse.Namespace) -> new.NewProjectRequest
     if arguments.description:
         answers["description"] = arguments.description
     for key, value in (
+        ("envergure", arguments.size),
         ("type_projet", arguments.project_type),
         ("backend", arguments.backend),
         ("frontend", arguments.frontend),
