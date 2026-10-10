@@ -45,16 +45,9 @@ dans `.copier-answers.yml`). Changer un paramètre (équipe, frameworks, podman�
 
 ## Installation
 
-Prérequis : [uv](https://docs.astral.sh/uv/)
-{%- if frontend in ['nuxt', 'next', 'astro'] %}, [pnpm](https://pnpm.io/) (avec Node 24){% endif %}
-{%- if podman %}, [podman](https://podman.io/){% endif %} et l'outil kiln, installé une fois par
-poste :
-
-```sh
-uv tool install git+https://github.com/antoine-tena/kiln
-```
-
-Puis, après le clone, depuis la racine du dépôt :
+Prérequis : ceux du démarrage rapide
+{%- if podman %}, plus [podman](https://podman.io/){% endif %}. Puis, après le clone, depuis la
+racine du dépôt :
 
 ```sh
 kiln install
@@ -74,6 +67,9 @@ kiln dev
 ```
 {% if backend == 'django' or backend == 'fastapi' %}
 - Backend : http://localhost:8000/api/ (documentation de l'API sur `/api/docs`).
+{%- if backend == 'django' %}
+  Sondes : `/api/health` (vivacité), `/api/ready` (disponibilité, vérifie la base).
+{%- endif %}
 {%- elif backend == 'data' %}
 - Notebooks marimo : http://localhost:2718.
 {%- endif %}
@@ -108,6 +104,26 @@ kiln check
 Ruff, mypy et pytest pour chaque projet Python
 {%- if frontend in ['nuxt', 'next'] %}, ESLint et le contrôle des types côté frontend
 {%- elif frontend == 'astro' %}, `astro check` côté frontend{% endif %}, puis la charte.
+
+{%- if backend == 'django' and frontend == 'nuxt' %}
+## Contrat d'API
+
+Le front appelle l'API par `useApi()`, typé par `openapi.json`. Après tout changement d'une route
+ou d'un schéma du backend :
+
+```sh
+kiln contrat
+```
+
+La commande exporte `openapi.json` depuis le code Django, puis régénère
+`frontend/app/types/api.d.ts`. Les deux fichiers se commitent avec le changement ; la CI échoue
+s'ils ont dérivé du code.
+
+{% endif -%}
+## Suivi du travail
+
+Ce qui reste à faire est dans [`docs/a-faire/`](docs/a-faire/) : `a-faire.md` (la liste, par
+criticité), `ecarte.md` (ce qui a été refusé) et `urgent.md` (ce que seul un humain peut faire).
 
 ## Contribuer
 
