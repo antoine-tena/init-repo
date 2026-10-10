@@ -2,7 +2,7 @@
 {%- set front_py = frontend in ['streamlit', 'dash'] %}
 {%- set front_js = frontend in ['nuxt', 'next', 'astro'] %}
 {%- set api = backend in ['django', 'fastapi'] %}
-{%- set back_label = {'django': 'Django + Django Ninja', 'fastapi': 'FastAPI', 'data': 'données Python : polars, marimo, Plotly'}.get(backend) %}
+{%- set back_label = {'django': 'Django + Django Ninja', 'fastapi': 'FastAPI', 'data': 'données Python : polars ou NumPy, marimo, Plotly'}.get(backend) %}
 {%- set front_label = {'nuxt': 'Nuxt 4 + Vue 3', 'next': 'Next.js 16 + React 19', 'astro': 'Astro 7', 'streamlit': 'Streamlit', 'dash': 'Dash'}.get(frontend) -%}
 # {{ titre }} — consignes et charte de développement
 

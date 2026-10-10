@@ -103,3 +103,13 @@ def test_a_faire_is_always_there(tmp_path: Path) -> None:
     urgent = (project_dir / "docs/a-faire/urgent.md").read_text()
     # La status line compte les lignes qui commencent par une case ouverte : aucune au départ.
     assert not [line for line in urgent.splitlines() if line.lstrip().startswith("- [ ]")]
+
+
+def test_data_stack_accepts_numeric_arrays_and_trained_models(tmp_path: Path) -> None:
+    project_dir = generate(tmp_path / "demo", backend="data", frontend="streamlit")
+
+    rules = (project_dir / "backend/CLAUDE.md").read_text()
+    assert "NumPy" in rules
+    assert "`data/models/`" in rules
+    attributes = (project_dir / ".gitattributes").read_text()
+    assert "backend/data/models/** linguist-generated=true" in attributes
