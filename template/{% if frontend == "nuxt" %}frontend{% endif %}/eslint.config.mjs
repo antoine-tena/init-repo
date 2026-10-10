@@ -14,6 +14,10 @@ export default withNuxt(
     files: ['**/*.vue'],
     rules: {
       'no-restricted-globals': ['error', { name: '$fetch', message: 'Passer par un composable (CLAUDE.md [APPELS-API]).' }],
+      'no-restricted-syntax': ['error', {
+        selector: "CallExpression[callee.name=/^(useApi|useFetch)$/]",
+        message: 'Passer par un composable (CLAUDE.md [APPELS-API]).',
+      }],
     },
   },
 )

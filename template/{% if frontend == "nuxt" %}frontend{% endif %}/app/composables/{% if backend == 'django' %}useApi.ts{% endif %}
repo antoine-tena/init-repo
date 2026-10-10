@@ -1,0 +1,18 @@
+import type { paths } from '~/types/api'
+
+// Routes, réponses et clés tirées de openapi.json (`pnpm generate:api`) : une route renommée ou
+// une réponse changée côté backend devient une erreur de compilation ([OPENAPI], [DERIVE]).
+type ApiPath = keyof paths
+type GetPath = { [Path in ApiPath]: paths[Path] extends { get: object } ? Path : never }[ApiPath]
+type JsonBody<Operation> = Operation extends {
+  responses: { 200: { content: { 'application/json': infer Body } } }
+} ? Body : never
+
+// [APPELS-API] : seul accès des composables à l'API ; les composants passent par un composable.
+export function useApi() {
+  return {
+    get<Path extends GetPath>(path: Path, key: string) {
+      return useFetch<JsonBody<paths[Path]['get']>>(path, { key })
+    },
+  }
+}

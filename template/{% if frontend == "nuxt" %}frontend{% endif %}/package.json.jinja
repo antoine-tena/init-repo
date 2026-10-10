@@ -9,7 +9,8 @@
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "lint": "eslint .",
-    "typecheck": "nuxt typecheck"
+    "typecheck": "nuxt typecheck"{% if backend == 'django' %},
+    "generate:api": "openapi-typescript ../openapi.json -o app/types/api.d.ts"{% endif %}
   },
   "dependencies": {
     "@tailwindcss/vite": "4.3.3",
@@ -21,6 +22,9 @@
   "devDependencies": {
     "@nuxt/eslint": "1.17.0",
     "eslint": "10.12.0",
+{%- if backend == 'django' %}
+    "openapi-typescript": "7.13.0",
+{%- endif %}
     "typescript": "6.0.3",
     "vue-tsc": "3.3.12"
   },
