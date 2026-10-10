@@ -3,14 +3,19 @@
 import subprocess
 from pathlib import Path
 
+from kiln.install import ensure_env_file
 from kiln.shell import KilnError, step
-from kiln.stack import load_stack
+from kiln.stack import BACKEND_DIR, load_stack
 
 
 def run_checks(root: Path) -> list[str]:
     """Lance chaque contrôle et renvoie les libellés de ceux qui ont échoué."""
     failed_checks: list[str] = []
-    for command in load_stack(root).check_commands():
+    stack = load_stack(root)
+    # Un worktree n'a pas de backend/.env (ignoré par git) : sans lui, Django ne démarre pas.
+    if stack.has_api and not (root / BACKEND_DIR / ".env").exists():
+        ensure_env_file(root / BACKEND_DIR)
+    for command in stack.check_commands():
         step(f"Vérification : {command.label}")
         completed = subprocess.run(list(command.argv), cwd=root / command.directory, check=False)
         if completed.returncode != 0:

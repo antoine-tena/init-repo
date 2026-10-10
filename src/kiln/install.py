@@ -42,7 +42,7 @@ def install_project(root: Path) -> None:
         run(["uv", "sync", "--locked"], root / directory)
     if stack.has_api:
         step("backend : .env")
-        _ensure_env_file(root / BACKEND_DIR)
+        ensure_env_file(root / BACKEND_DIR)
     if stack.backend == "django":
         step("backend : migrations")
         run(["uv", "run", "python", "manage.py", "migrate"], root / BACKEND_DIR)
@@ -82,7 +82,8 @@ def _ensure_uv_tool(tool: str, *extras: str) -> None:
     run(["uv", "tool", "install", tool, *with_options], Path.cwd())
 
 
-def _ensure_env_file(backend_dir: Path) -> None:
+def ensure_env_file(backend_dir: Path) -> None:
+    """backend/.env tiré de .env.example, avec une clé secrète locale ; conservé s'il existe."""
     env_file = backend_dir / ".env"
     if env_file.exists():
         print("backend/.env existe déjà, conservé.")
